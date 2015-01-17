@@ -5,6 +5,8 @@ package ch.bfh.fpe.messageSpace;
  */
 public class OutsideMessageSpaceException extends RuntimeException {
 
+	private static final long serialVersionUID = 1L;
+
 	/**
 	 * Construct a exception with a detail message that contains the
 	 * value which caused the exception.

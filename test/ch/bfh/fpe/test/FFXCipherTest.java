@@ -1,16 +1,7 @@
 package ch.bfh.fpe.test;
 
 import static org.junit.Assert.*;
-
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.junit.Test;
 import ch.bfh.fpe.intEnc.FFXCipher;
 import ch.bfh.fpe.messageSpace.IntegerMessageSpace;
@@ -39,7 +30,7 @@ public class FFXCipherTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void testNotNull() {
 		IntegerMessageSpace iMs = null;
-		FFXCipher ffx = new FFXCipher(iMs);
+		new FFXCipher(iMs);
 	}
 
 
@@ -89,7 +80,7 @@ public class FFXCipherTest {
 		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.valueOf(61431411));
 		FFXCipher ffx = new FFXCipher(iMs);
 		byte[] tweak = new byte[]{15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0};
-		BigInteger cipher = ffx.encrypt(BigInteger.valueOf(511),key,tweak);
+		ffx.encrypt(BigInteger.valueOf(511),key,tweak);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -111,14 +102,14 @@ public class FFXCipherTest {
 		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.valueOf(50000));
 		FFXCipher ffx = new FFXCipher(iMs);
 		BigInteger plaintext = BigInteger.valueOf(-5613);
-		BigInteger ciphertext = ffx.encrypt(plaintext, key,tweak);
+		ffx.encrypt(plaintext, key,tweak);
 	}
 	
 	@Test(expected = IllegalArgumentException.class)
 	public void testEncryptDecryptMSBiggerThan128Bit() {
 		BigInteger bigNumber = BigInteger.valueOf(Long.MAX_VALUE).multiply(BigInteger.valueOf(Long.MAX_VALUE).multiply(BigInteger.valueOf(Long.MAX_VALUE)));
 		IntegerMessageSpace iMs = new IntegerMessageSpace(bigNumber);
-		FFXCipher ffx = new FFXCipher(iMs);
+		new FFXCipher(iMs);
 
 	}
 	

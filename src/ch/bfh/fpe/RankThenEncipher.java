@@ -1,14 +1,10 @@
 package ch.bfh.fpe;
 
 import java.math.BigInteger;
-import java.util.Arrays;
-
 import ch.bfh.fpe.intEnc.FFXCipher;
 import ch.bfh.fpe.intEnc.IntegerCipher;
-import ch.bfh.fpe.messageSpace.EnumerationMessageSpace;
 import ch.bfh.fpe.messageSpace.MessageSpace;
 import ch.bfh.fpe.messageSpace.IntegerMessageSpace;
-import ch.bfh.fpe.messageSpace.StringMessageSpace;
 
 /** 
  * This class is an implementation of the "Rank-then-Encipher Approach" for Format Preserving Encryption Cipher: <a href="https://eprint.iacr.org/2009/251.pdf">https://eprint.iacr.org/2009/251.pdf</a><br><br>

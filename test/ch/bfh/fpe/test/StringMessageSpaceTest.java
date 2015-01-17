@@ -3,13 +3,9 @@ package ch.bfh.fpe.test;
 import static org.junit.Assert.*;
 import java.math.BigInteger;
 import org.junit.Test;
-
 import ch.bfh.fpe.messageSpace.StringMessageSpace;
 import dk.brics.automaton.Automaton;
 import dk.brics.automaton.Datatypes;
-import dk.brics.automaton.RegExp;
-import dk.brics.automaton.State;
-import dk.brics.automaton.Transition;
 
 public class StringMessageSpaceTest {
 	

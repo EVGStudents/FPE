@@ -15,7 +15,7 @@ public class Demo {
 	
 	public static void main(String[] args) {
 		enumeration();
-		//regex();
+		regex();
 	}
 	
 	private static void enumeration() {
