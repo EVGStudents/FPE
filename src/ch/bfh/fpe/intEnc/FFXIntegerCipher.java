@@ -15,20 +15,20 @@ import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
 
 /**
  * This class is an implementation of the "FFX Mode of Operation for Format-Preserving Encryption": <a href="http://csrc.nist.gov/groups/ST/toolkit/BCM/documents/proposedmodes/ffx/ffx-spec.pdf">http://csrc.nist.gov/groups/ST/toolkit/BCM/documents/proposedmodes/ffx/ffx-spec.pdf</a><br><br>
- * FFXCipher is a Format Preserving Encryption (FPE) Cipher for numbers from zero to a maximum of 38 decimal digits (128 bits).<br>
- * The FFXCipher encrypts a given input number from a specified range in such way, that the output value is also a number from the same range.
+ * FFXIntegerCipher is a Format Preserving Encryption (FPE) Cipher for numbers from zero to a maximum of 38 decimal digits (128 bits).<br>
+ * The FFXIntegerCipher encrypts a given input number from a specified range in such way, that the output value is also a number from the same range.
  * This range from zero to a maximum value is defined by an IntegerMessageSpace delivered in the constructor.<br/><br/>
  * 
- * Following a simple example how to use a FFXCipher. Here the aim is to encrypt the number 12345 into another number in the range of 0-1000000:<br/><br/>
+ * Following a simple example how to use a FFXIntegerCipher. Here the aim is to encrypt the number 12345 into another number in the range of 0-1000000:<br/><br/>
  * 
  * <code>IntegerMessageSpace intMS = new IntegerMessageSpace(BigInteger.valueOf(1000000));<br>
- *		FFXCipher ffx = new FFXCipher(intMS);<br/><br/>
+ *		FFXIntegerCipher ffx = new FFXIntegerCipher(intMS);<br/><br/>
  *
  *		BigInteger plaintext = BigInteger.valueOf(12345); <br>
  *		BigInteger ciphertext = ffx.encrypt(plaintext,key,tweak); //possible result: 503752</code><br/><br/>
  *
  * The ciphertext could now be for example 503752. 
- * By putting this number into the decrypt-method of the FFXCipher, with the same key and the same tweak, you will receive the plaintext, in this case 12345 back.<br/><br/>
+ * By putting this number into the decrypt-method of the FFXIntegerCipher, with the same key and the same tweak, you will receive the plaintext, in this case 12345 back.<br/><br/>
  * 
  * <code>BigInteger decPlaintext = ffx.decrypt(ciphertext, key,tweak); //result: 12345</code><br/><br/>
  * 
@@ -41,21 +41,22 @@ import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
  * <li>feistel method = 2 (alternating feistel)</li>
  * <li>addition operator = 0 (characterwise addition (xor))</li></ul><br/>
  */
-public class FFXCipher extends IntegerCipher {
+public class FFXIntegerCipher extends IntegerCipher {
 
-	private final static byte VERS = 1; 	//version: 1
-	private final static byte METHOD = 2;   //ffx mode: 2 = alternating Feistel
-	private final static byte ADDITION = 0; //addition operator: characterwise addition (xor)
-	private final static byte RADIX = 2; 	//number of symbols in alphabet: {0, 1} = 2
+	private static final int MAX_BIT_LENGTH = 128;	//ffx is restricted to 128 bit
+	private static final byte VERS = 1; 			//version: 1
+	private static final byte METHOD = 2;   		//ffx mode: 2 = alternating Feistel
+	private static final byte ADDITION = 0; 		//addition operator: characterwise addition (xor)
+	private static final byte RADIX = 2; 			//number of symbols in alphabet: {0, 1} = 2
 	
 	/**
-	 * Constructs a FFXCipher with the maximum value determined in the IntegerMessageSpace.<br>
+	 * Constructs a FFXIntegerCipher with the maximum value determined in the IntegerMessageSpace.<br>
 	 * @param messageSpace IntegerMessageSpace to determine the number range of the input respectively output of the encryption/decryption
 	 * @throws IllegalArgumentException if the maximum value in the IntegerMessageSpace is bigger than representable with 128 bit
 	 */
-	public FFXCipher(IntegerMessageSpace messageSpace) {
+	public FFXIntegerCipher(IntegerMessageSpace messageSpace) {
 		super(messageSpace);
-		if (messageSpace.getOrder().bitLength() > 128) throw new IllegalArgumentException("Message space must not be bigger than 128 bit");
+		if (messageSpace.getOrder().bitLength() > MAX_BIT_LENGTH) throw new IllegalArgumentException("Message space must not be bigger than 128 bit");
 	}
 		
 	/**
@@ -227,7 +228,7 @@ public class FFXCipher extends IntegerCipher {
 	 * @param big BigInteger to be converted
 	 * @return BitSet with the same value as the input BigInteger was
 	 */
-	private BitSet bigIntegerToBitSet(BigInteger big)
+	private static BitSet bigIntegerToBitSet(BigInteger big)
 	{
 		BitSet bitSet = new BitSet(big.bitLength());
 		for (int i = 0; i <= big.bitLength(); i++) {
@@ -260,7 +261,7 @@ public class FFXCipher extends IntegerCipher {
 	 * @param furtherBytes Second ByteArray to be concatenated
 	 * @return Concatenated ByteArray
 	 */
-	private byte[] concatByteArrays(byte firstBytes[],byte furtherBytes[])
+	private static byte[] concatByteArrays(byte firstBytes[],byte furtherBytes[])
 	{
 		byte[] returnArray = new byte[firstBytes.length + furtherBytes.length];
 		System.arraycopy(firstBytes, 0, returnArray, 0, firstBytes.length);
@@ -275,7 +276,7 @@ public class FFXCipher extends IntegerCipher {
 	 * @param array2 Second ByteArray
 	 * @return a ByteArray with the XOR value
 	 */
-	private byte[] xorByteArray(byte[] array1, byte[] array2)
+	private static byte[] xorByteArray(byte[] array1, byte[] array2)
 	{
 		byte[] xorArray = new byte[array1.length];
 		int i = 0;
@@ -294,7 +295,7 @@ public class FFXCipher extends IntegerCipher {
 	 * @param msBitLength bitlength of the message space which means amount of bits needed to represent the order of the message space
 	 * @return number of feistel rounds determined
 	 */
-	private int determineNrOfRounds(int msBitLength)
+	private static int determineNrOfRounds(int msBitLength)
 	{
 		if (msBitLength >= 32) {
 			return 12;

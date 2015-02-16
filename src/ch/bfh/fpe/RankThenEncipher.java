@@ -1,7 +1,7 @@
 package ch.bfh.fpe;
 
 import java.math.BigInteger;
-import ch.bfh.fpe.intEnc.FFXCipher;
+import ch.bfh.fpe.intEnc.FFXIntegerCipher;
 import ch.bfh.fpe.intEnc.IntegerCipher;
 import ch.bfh.fpe.messageSpace.MessageSpace;
 import ch.bfh.fpe.messageSpace.IntegerMessageSpace;
@@ -21,7 +21,7 @@ import ch.bfh.fpe.messageSpace.IntegerMessageSpace;
  * 
  * The main idea behind the "Rank-then-Encipher Approach" is that the algorithm does not directly encrypt the input value, e.g. a string, but assigns him first a number.<br>
  * This number is called "rank" and makes the input distinctly identifiable in the message space.
- * Since the rank is a normal number it can be encrypted with an IntegerCipher like the FFXCipher.<br> 
+ * Since the rank is a normal number it can be encrypted with an IntegerCipher like the FFXIntegerCipher.<br> 
  * The encrypted number will also be a number distinctly identifiable in the message space and so we are able to "unrank" it and get back another possible (e.g. string) value in the message space.<br>
  * For further details about the "Rank-then-Encipher Approach" visits its documentation on the link given above.<br/><br/>
  * 
@@ -63,7 +63,7 @@ public class RankThenEncipher<M> extends FPECipher<M> {
 	public RankThenEncipher(MessageSpace<M> messageSpace) {
 		super(messageSpace);
 		if (messageSpace==null) throw new IllegalArgumentException("MessageSpace must not be null");
-		integerCipher = new FFXCipher(new IntegerMessageSpace(messageSpace.getOrder().subtract(BigInteger.ONE)));
+		integerCipher = new FFXIntegerCipher(new IntegerMessageSpace(messageSpace.getOrder().subtract(BigInteger.ONE)));
 	}
 
 	/**

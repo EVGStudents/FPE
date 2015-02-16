@@ -22,7 +22,6 @@ public class IntegerMessageSpace extends IntegerRangeMessageSpace {
 	 */
 	public IntegerMessageSpace(BigInteger max) {
 		super(BigInteger.ZERO, max);
-		if (max.signum() == -1) throw new IllegalArgumentException("Max must me postive.");
 	}
 
 }

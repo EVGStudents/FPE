@@ -40,8 +40,8 @@ public abstract class FPECipher<M> {
 	/**
 	 * Encrypts a plaintext in such a way that the output is in the format as given in the message space.
 	 * @param plaintext value to be encrypted, has to be in a valid format according to the given message space
-	 * @param key randomly computed 16-byte key 
-	 * @param tweak random bytes from 1 to maximum 8 bytes to prevent deterministic encryption
+	 * @param key randomly computed key 
+	 * @param tweak random bytes to prevent deterministic encryption
 	 * @return encrypted value of plaintext
 	 */
 	public abstract M encrypt(M plaintext, byte[] key, byte[] tweak);
@@ -50,7 +50,7 @@ public abstract class FPECipher<M> {
 	/**
 	 * Decrypts a ciphertext to its originally plaintext.
 	 * @param ciphertext ciphertext to be decrypted (has to be encrypted with the same MessageSpace as given in this instance)
-	 * @param key must be exactly the same 16-byte key as used for the encryption of this ciphertext
+	 * @param key must be exactly the same key as used for the encryption of this ciphertext
 	 * @param tweak must be exactly the same tweak as used for the encryption of this ciphertext
 	 * @return decrypted value of ciphertext
 	 */
