@@ -135,10 +135,20 @@ public class FFXIntegerCipher extends IntegerCipher {
 		BitSet temp = new BitSet();
 
 		
+		// Initialize AES 
+		IvParameterSpec ivspec = new IvParameterSpec(new byte[16]); //zero initialization vector is necessary, makes the AES encryption act as an AES CBC MAC
+		Cipher aesCipher = Cipher.getInstance("AES/CBC/NoPadding");
+		aesCipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"),ivspec);
+		
+		//Construct the precomputable part p of the AES input (stays the same over all rounds) and encrypt it
+		byte[] p = new byte[]{0,VERS,METHOD,ADDITION,RADIX, (byte)msBitLength, (byte)middleIndex, (byte)nrOfRounds, 0,0,0,0,0,0,0,(byte)tweak.length}; //total 16 bytes 
+		p = aesCipher.doFinal(p);
+		
+		
 		//Iterate the feistel rounds
 		if (encryption){
 			for (int i = 0; i < nrOfRounds; i++) {
-				a.xor(roundFunction(key, msBitLength, tweak, nrOfRounds, i, b));
+				a.xor(roundFunction(aesCipher, p, msBitLength, tweak, i, b));
 				temp = a;
 				a = b;
 				b = temp;
@@ -148,7 +158,7 @@ public class FFXIntegerCipher extends IntegerCipher {
 				temp = b;
 				b = a;
 				a = temp;
-				a.xor(roundFunction(key, msBitLength, tweak, nrOfRounds, i, b));
+				a.xor(roundFunction(aesCipher, p, msBitLength, tweak, i, b));
 			}
 		}
 			
@@ -165,19 +175,20 @@ public class FFXIntegerCipher extends IntegerCipher {
 	
 	/**
 	 * In the round function the actual encryption/decryption with an AES CBC MAC happens. The input for this MAC is composed with a lot of parameters as defined in the FFX standard.
-	 * @param key randomly computed 16-byte key 
+	 * @param aesCipher a cipher object initalize to be used as AES CBC MAC
+	 * @param p precomputed part of the encryption
 	 * @param msBitLength bitlength of the message space which means amount of bits needed to represent the order of the message space
 	 * @param tweak random bytes from 1 to maximum 8 bytes to prevent deterministic encryption
-	 * @param nrOfRounds number of rounds depending on bitlength of the message space
-	 * @param roundNr actual round number
+	 * @param roundNr current round number
 	 * @param b part of the value to be encrypted/decrypted
 	 * @return returns a ciphertext or a plaintext, depending on encryption or decryption
 	 * @throws GeneralSecurityException wrong security parameter in AES-CBC-MAC. Should not happen because we control/check all parameters.
 	 */
-	private BitSet roundFunction(byte[] key, int msBitLength, byte[] tweak, int nrOfRounds, int roundNr, BitSet b) throws GeneralSecurityException
+	private BitSet roundFunction(Cipher aesCipher, byte[] p, int msBitLength, byte[] tweak, int roundNr, BitSet b) throws GeneralSecurityException
 	{
+		byte[] encryptionOutput;
 		int middleIndex = (msBitLength+1) / 2; 
-
+		
 		// If the delivered tweak is smaller than 8 bytes, we need an array of 8 bytes (1-7 bytes tweak, 0-6 bytes zero padding, 1 byte round number)
 		// If the delivered tweak has 8 bytes, we need an array of 32 bytes (8 byte tweak, 15 bytes zero padding, 1 byte round number)
 		int additionalBytes = 0;
@@ -192,24 +203,22 @@ public class FFXIntegerCipher extends IntegerCipher {
 		byte[] paddedB = new byte[8]; 
 		System.arraycopy(b.toByteArray(), 0, paddedB, 0, b.toByteArray().length);
 		
-		// Construct the AES input, which has to be a multiple of 16 bytes (note: p stays the same for all rounds, could be precomputed to enhance performance)
-		byte[] p = new byte[]{0,VERS,METHOD,ADDITION,RADIX, (byte)msBitLength, (byte)middleIndex, (byte)nrOfRounds, 0,0,0,0,0,0,0,(byte)tweak.length}; //total 16 bytes 
+		// Construct the variable part of the AES input (changes every round)
 		byte[] q = concatByteArrays(paddedB,paddedTweak); // Tweak+RoundNr (8 or 24 bytes) || B (8 byte) = total 16 or 32 bytes
-		byte[] encryptionInput = concatByteArrays(q,p); // total 32 or 48 bytes
 		
-		// Initialize AES 
-		IvParameterSpec ivspec = new IvParameterSpec(new byte[16]); //zero initialization vector is necessary, makes the AES encryption act as an AES CBC MAC
-		Cipher encrypt = Cipher.getInstance("AES/CBC/NoPadding");
-		encrypt.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"),ivspec);
 		
-		// Empty cipher for first XOR
-		byte[] encryptionOutput = new byte[16];
-
-		// XOR each 16 byte block in encryptionInput with the previous one and encrypt it
-		for (int m=0; m < encryptionInput.length;m+=16){ 
-			byte[] encryptionInputSlice = Arrays.copyOfRange(encryptionInput, m, m+16);	
-			encryptionOutput = encrypt.doFinal(xorByteArray(encryptionInputSlice,encryptionOutput));
+		// If q is 16 bytes, xor p with q and encrypt it
+		if(q.length == 16){
+			encryptionOutput = aesCipher.doFinal(xorByteArray(p,q));
 		}
+		// If q is 32 bytes, xor p with the first part of q, encrypt it and xor this result with the second part of q and encrypt again
+		else{ //q.length == 32
+			byte[] q1 = Arrays.copyOfRange(q, 0, 16);
+			encryptionOutput = aesCipher.doFinal(xorByteArray(p,q1));
+			byte[] q2 = Arrays.copyOfRange(q, 16, 32);
+			encryptionOutput = aesCipher.doFinal(xorByteArray(encryptionOutput,q2));
+		}
+		
 		BitSet ciphertext = BitSet.valueOf(encryptionOutput);	
 		
 		// Calculate the amounts of bits to return
