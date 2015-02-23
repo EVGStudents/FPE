@@ -34,7 +34,7 @@ import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
  * 
  * The key is a random 16-byte-array and has to be the same for decrypting a value as he was for encrypting it.<br>
  * The tweak is a value similar to an initialization vector (iv) or a salt on hashing in the sense that he prevents a deterministic encryption. 
- * A tweak must be a random value from 1 to 8 bytes and has to be the same for decrypting a value as he was for encrypting it.<br/><br/>
+ * A tweak can be arbitrary long and has to be the same for decrypting a value as he was for encrypting it.<br/><br/>
  * 
  * The parameters in the FFX algorithm are set as follows:<ul>
  * <li>radix = 2 (number of symbols in alphabet: {0, 1})</li>
@@ -82,7 +82,7 @@ public class FFXIntegerCipher extends IntegerCipher {
 	 * If not, the encrypted/decrypted value is encrypted/decrypted once again and so on. This procedure is called "Cycle Walking".
 	 * @param input plaintext to be encrypted or ciphertext to be decrypted
 	 * @param key randomly computed 16-byte key 
-	 * @param tweak random bytes from 1 to maximum 8 bytes to prevent deterministic encryption
+	 * @param tweak arbitrary bytes to prevent deterministic encryption
 	 * @param encryption true if this method is called for an encryption, false if for a decryption
 	 * @return returns a ciphertext or a plaintext, depending on encryption or decryption
 	 * @throws IllegalArgumentException if input is null or negative, key is not 128 bit or tweak is longer than 64 bit
@@ -95,7 +95,7 @@ public class FFXIntegerCipher extends IntegerCipher {
 		if (input.compareTo(BigInteger.ZERO)==-1) throw new IllegalArgumentException("Input value must not be negative");
 		if (input.compareTo(maxMsValue)==1) throw new OutsideMessageSpaceException(input.toString());
 		if (key==null || key.length != 16) throw new IllegalArgumentException("Key must be 128 Bit long");
-		if (tweak==null || tweak.length > 8) throw new IllegalArgumentException("Tweak must not be longer than 64 Bit");
+		if (tweak==null) throw new IllegalArgumentException("Tweak must not be null");
 
 		try {
 			do{ input = cipherFunction(input,key, tweak, encryption);
@@ -117,7 +117,7 @@ public class FFXIntegerCipher extends IntegerCipher {
 	 * 
 	 * @param input plaintext to be encrypted or ciphertext to be decrypted
 	 * @param key randomly computed 16-byte key 
-	 * @param tweak random bytes from 1 to maximum 8 bytes to prevent deterministic encryption
+	 * @param tweak arbitrary bytes to prevent deterministic encryption
 	 * @param encryption true if this method is called for an encryption, false if for a decryption
 	 * @return returns a ciphertext or a plaintext, depending on encryption or decryption
 	 * @throws GeneralSecurityException wrong security parameter in AES-CBC-MAC. Should not happen because we control/check all parameters.
@@ -178,7 +178,7 @@ public class FFXIntegerCipher extends IntegerCipher {
 	 * @param aesCipher a cipher object initalize to be used as AES CBC MAC
 	 * @param p precomputed part of the encryption
 	 * @param msBitLength bitlength of the message space which means amount of bits needed to represent the order of the message space
-	 * @param tweak random bytes from 1 to maximum 8 bytes to prevent deterministic encryption
+	 * @param tweak arbitrary bytes to prevent deterministic encryption
 	 * @param roundNr current round number
 	 * @param b part of the value to be encrypted/decrypted
 	 * @return returns a ciphertext or a plaintext, depending on encryption or decryption
@@ -186,47 +186,39 @@ public class FFXIntegerCipher extends IntegerCipher {
 	 */
 	private BitSet roundFunction(Cipher aesCipher, byte[] p, int msBitLength, byte[] tweak, int roundNr, BitSet b) throws GeneralSecurityException
 	{
-		byte[] encryptionOutput;
 		int middleIndex = (msBitLength+1) / 2; 
 		
-		// If the delivered tweak is smaller than 8 bytes, we need an array of 8 bytes (1-7 bytes tweak, 0-6 bytes zero padding, 1 byte round number)
-		// If the delivered tweak has 8 bytes, we need an array of 32 bytes (8 byte tweak, 15 bytes zero padding, 1 byte round number)
-		int additionalBytes = 0;
-		if (tweak.length==8) additionalBytes = 16; 
-		byte[] paddedTweak = new byte[8+additionalBytes]; 
+		// Construct the variable part q of the AES input (changes every round)
+		// First part of q is a array of minimum 8 bytes and consists of the tweak, a zero padding and the round number in the last byte
+		byte[] paddedTweak = new byte[1 + tweak.length + ((((-tweak.length-9)%16)+16)%16)]; //  (%16)+16)%16 is necessary to prevent negative modulo values
 		System.arraycopy(tweak, 0, paddedTweak, 0, tweak.length);
-		
-		// Copy the round number in the last byte of the padded tweak
 		paddedTweak[paddedTweak.length-1] = (byte) roundNr ; 
 		
-		// Copy the plaintext bitset into a byte array of 8 bytes
+		// Second part of q is the actual plaintext b which is copied into a byte array of 8 bytes
 		byte[] paddedB = new byte[8]; 
 		System.arraycopy(b.toByteArray(), 0, paddedB, 0, b.toByteArray().length);
 		
-		// Construct the variable part of the AES input (changes every round)
-		byte[] q = concatByteArrays(paddedB,paddedTweak); // Tweak+RoundNr (8 or 24 bytes) || B (8 byte) = total 16 or 32 bytes
+		// Concatenate these two parts to get the AES input q which is always a multiple of 16 bytes (AES block length)
+		byte[] q = concatByteArrays(paddedB,paddedTweak); 
 		
 		
-		// If q is 16 bytes, xor p with q and encrypt it
-		if(q.length == 16){
-			encryptionOutput = aesCipher.doFinal(xorByteArray(p,q));
+		// Copy precomputed p in encOutput for first XOR
+		byte[] encOutput = p;
+
+		// XOR each 16 byte block in q with the previous one and encrypt it
+		for (int m=0; m < q.length;m+=16){ 
+			byte[] encInput = Arrays.copyOfRange(q, m, m+16);	
+			encOutput = aesCipher.doFinal(xorByteArray(encInput,encOutput));
 		}
-		// If q is 32 bytes, xor p with the first part of q, encrypt it and xor this result with the second part of q and encrypt again
-		else{ //q.length == 32
-			byte[] q1 = Arrays.copyOfRange(q, 0, 16);
-			encryptionOutput = aesCipher.doFinal(xorByteArray(p,q1));
-			byte[] q2 = Arrays.copyOfRange(q, 16, 32);
-			encryptionOutput = aesCipher.doFinal(xorByteArray(encryptionOutput,q2));
-		}
-		
-		BitSet ciphertext = BitSet.valueOf(encryptionOutput);	
+				
+		BitSet ciphertext = BitSet.valueOf(encOutput);	
 		
 		// Calculate the amounts of bits to return
 		// If the message space bitlength is even, the middleIndex is always the half of it
 		if((msBitLength%2)==0 || (roundNr%2)!=0){ 
 			return ciphertext.get(128-middleIndex, 128) ;
 		}
-		else{ //If ms bitlength is uneven, on even rounds, the bigger part is in the XOR, so we need one bit more
+		else{ //If ms bitlength is uneven, on even rounds, the bigger part is in the XOR, so we return one bit more
 			return ciphertext.get(128-(middleIndex-1), 128) ;
 		}
 	}

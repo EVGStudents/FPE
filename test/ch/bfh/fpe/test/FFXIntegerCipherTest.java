@@ -2,6 +2,8 @@ package ch.bfh.fpe.test;
 
 import static org.junit.Assert.*;
 import java.math.BigInteger;
+import java.util.Random;
+
 import org.junit.Test;
 import ch.bfh.fpe.intEnc.FFXIntegerCipher;
 import ch.bfh.fpe.messageSpace.IntegerMessageSpace;
@@ -11,7 +13,7 @@ public class FFXIntegerCipherTest {
 	
 	
 	byte[] key = new byte[]{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
-	byte[] tweak = new byte[]{0,1,2,3,4,5,6,7};
+	byte[] tweak = new byte[]{0,1,2,3,4,5,6};
 
 
 	
@@ -32,7 +34,6 @@ public class FFXIntegerCipherTest {
 		IntegerMessageSpace iMs = null;
 		new FFXIntegerCipher(iMs);
 	}
-
 
 
 	@Test(expected = IllegalArgumentException.class)
@@ -69,19 +70,24 @@ public class FFXIntegerCipherTest {
 		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.valueOf(61431411));
 		FFXIntegerCipher ffx = new FFXIntegerCipher(iMs);
 		byte[] tweak = new byte[1];
+		new Random().nextBytes(tweak);
+		BigInteger cipher1 = ffx.encrypt(BigInteger.valueOf(511),key,tweak);
+		BigInteger cipher2 = ffx.encrypt(BigInteger.valueOf(511),key,tweak);
+		assertEquals(cipher1, cipher2);
+	}
+	
+	@Test
+	public void testEncryptLongTweak() {
+		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.valueOf(61431411));
+		FFXIntegerCipher ffx = new FFXIntegerCipher(iMs);
+		byte[] tweak = new byte[1000000]; // 1 megabyte
+		new Random().nextBytes(tweak);
+
 		BigInteger cipher1 = ffx.encrypt(BigInteger.valueOf(511),key,tweak);
 		BigInteger cipher2 = ffx.encrypt(BigInteger.valueOf(511),key,tweak);
 		assertEquals(cipher1, cipher2);
 	}
 
-	
-	@Test(expected = IllegalArgumentException.class)
-	public void testEncryptTewakTooLong() {
-		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.valueOf(61431411));
-		FFXIntegerCipher ffx = new FFXIntegerCipher(iMs);
-		byte[] tweak = new byte[]{15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0};
-		ffx.encrypt(BigInteger.valueOf(511),key,tweak);
-	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testKeyNot128Bit() {

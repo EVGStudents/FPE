@@ -48,7 +48,7 @@ import ch.bfh.fpe.messageSpace.IntegerMessageSpace;
  * 
  * The key is a random 16-byte-array and has to be the same for decrypting a value as he was for encrypting it.<br>
  * The tweak is a value similar to an initialization vector (iv) or a salt on hashing in the sense that he prevents a deterministic encryption. 
- * A tweak must be a random value from 1 to 8 bytes and has to be the same for decrypting a value as he was for encrypting it.<br/><br/>
+ * A tweak can be arbitrary long and has to be the same for decrypting a value as he was for encrypting it.<br/><br/>
  * 
  * @param <M> type of elements in given message space respectively type of elements to be encrypted/decrypted
  */
