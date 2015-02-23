@@ -58,12 +58,30 @@ public class RankThenEncipher<M> extends FPECipher<M> {
 
 	/**
 	 * Constructs a RankThenEncipher-FPE-Cipher.
+	 * Depending on the order, the most secure and then efficient integer cipher is chosen.
+	 * At the moment, only the FFXIntegerCipher (with up to 128 bit) is implemented.
 	 * @param messageSpace defines the format of plaintext and ciphertext.
 	 */
 	public RankThenEncipher(MessageSpace<M> messageSpace) {
 		super(messageSpace);
 		if (messageSpace==null) throw new IllegalArgumentException("MessageSpace must not be null");
 		integerCipher = new FFXIntegerCipher(new IntegerMessageSpace(messageSpace.getOrder().subtract(BigInteger.ONE)));
+	}
+	
+	/**
+	 * Constructs a RankThenEncipher-FPE-Cipher.
+	 * @param messageSpace defines the format of plaintext and ciphertext.
+	 * @param integerCipher defines the FPE integer cipher used to encrypt/decrypt
+	 */
+	public RankThenEncipher(MessageSpace<M> messageSpace, IntegerCipher integerCipher) {
+		super(messageSpace);
+		if (messageSpace==null)
+			throw new IllegalArgumentException("MessageSpace must not be null");
+		if (integerCipher==null)
+			throw new IllegalArgumentException("IntegerCipher must not be null");
+		if (!messageSpace.getOrder().equals(integerCipher.getMessageSpace().getOrder()))
+			throw new IllegalArgumentException("Message space of plain-/ciphertext and integer cipher must have the same order");
+		this.integerCipher = integerCipher;
 	}
 
 	/**
