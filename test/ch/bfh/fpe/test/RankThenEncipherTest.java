@@ -8,7 +8,10 @@ import java.util.ArrayList;
 import org.junit.Test;
 
 import ch.bfh.fpe.RankThenEncipher;
+import ch.bfh.fpe.intEnc.FFXIntegerCipher;
+import ch.bfh.fpe.intEnc.IntegerCipher;
 import ch.bfh.fpe.messageSpace.EnumerationMessageSpace;
+import ch.bfh.fpe.messageSpace.IntegerMessageSpace;
 import ch.bfh.fpe.messageSpace.IntegerRangeMessageSpace;
 import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
 
@@ -22,6 +25,14 @@ public class RankThenEncipherTest {
 	public void testNotNull() {
 		IntegerRangeMessageSpace iMs = null;
 		new RankThenEncipher<BigInteger>(iMs);
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testMSNotEqual() {
+		IntegerRangeMessageSpace irMs = new IntegerRangeMessageSpace(BigInteger.ONE, BigInteger.TEN);
+		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.TEN);
+		IntegerCipher iC = new FFXIntegerCipher(iMs);
+		new RankThenEncipher<BigInteger>(irMs, iC);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -75,7 +86,9 @@ public class RankThenEncipherTest {
 		list.add("b");
 		list.add("c");
 		EnumerationMessageSpace<String> eMs = new EnumerationMessageSpace<String>(list);
-		RankThenEncipher<String> rte = new RankThenEncipher<String>(eMs);
+		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.valueOf(2));
+		FFXIntegerCipher iC = new FFXIntegerCipher(iMs);
+		RankThenEncipher<String> rte = new RankThenEncipher<String>(eMs, iC);
 		String plaintext = "b";
 		String ciphertext = rte.encrypt(plaintext, key, tweak);
 		String decPlaintext = rte.decrypt(ciphertext, key, tweak);
