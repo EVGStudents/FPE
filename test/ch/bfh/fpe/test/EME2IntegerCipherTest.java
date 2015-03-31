@@ -16,12 +16,19 @@ public class EME2IntegerCipherTest {
 	
 	byte[] key = new byte[48];
 	byte[] tweak = new byte[37];
-	byte[] plaintext = new byte[243];
+	byte[] plaintext = new byte[43];
 	byte[] msMax = new byte[500];
 	IntegerMessageSpace intMS;
 			
+	
+	//to test:
+	// zero tweak
+	// 64 byte key
+	
+	
 	@Before
     public void initObjects() {
+		//Set the highest byte in the array, so all bytes of the array are going into the BigInteger
 		tweak[0] =  (byte)127;
 		plaintext[0] =  (byte)127;
 		key[0] =  (byte)127;
@@ -218,5 +225,6 @@ public class EME2IntegerCipherTest {
 	
 	}
 	*/
+	
 }
 

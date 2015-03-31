@@ -1,6 +1,8 @@
 package ch.bfh.fpe;
 
 import java.math.BigInteger;
+
+import ch.bfh.fpe.intEnc.EME2IntegerCipher;
 import ch.bfh.fpe.intEnc.FFXIntegerCipher;
 import ch.bfh.fpe.intEnc.IntegerCipher;
 import ch.bfh.fpe.messageSpace.MessageSpace;
@@ -65,7 +67,12 @@ public class RankThenEncipher<M> extends FPECipher<M> {
 	public RankThenEncipher(MessageSpace<M> messageSpace) {
 		super(messageSpace);
 		if (messageSpace==null) throw new IllegalArgumentException("MessageSpace must not be null");
-		integerCipher = new FFXIntegerCipher(new IntegerMessageSpace(messageSpace.getOrder().subtract(BigInteger.ONE)));
+		if (messageSpace.getOrder().bitLength()>128){
+			integerCipher = new EME2IntegerCipher(new IntegerMessageSpace(messageSpace.getOrder().subtract(BigInteger.ONE)));
+		} else {
+			integerCipher = new FFXIntegerCipher(new IntegerMessageSpace(messageSpace.getOrder().subtract(BigInteger.ONE)));
+		}
+	
 	}
 	
 	/**
