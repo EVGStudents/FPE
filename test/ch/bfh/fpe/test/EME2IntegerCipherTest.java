@@ -21,11 +21,6 @@ public class EME2IntegerCipherTest {
 	IntegerMessageSpace intMS;
 			
 	
-	//to test:
-	// zero tweak
-	// 64 byte key
-	
-	
 	@Before
     public void initObjects() {
 		//Set the highest byte in the array, so all bytes of the array are going into the BigInteger
@@ -82,9 +77,9 @@ public class EME2IntegerCipherTest {
 	
 
 	@Test
-	public void testEncryptSmallTweak() {
+	public void testEncryptZeroTweak() {
 		EME2IntegerCipher eme2 = new EME2IntegerCipher(intMS);
-		byte[] tweak = new byte[1];
+		byte[] tweak = new byte[0];
 		new Random().nextBytes(tweak);
 		BigInteger cipher1 = eme2.encrypt(BigInteger.valueOf(511),key,tweak);
 		BigInteger cipher2 = eme2.encrypt(BigInteger.valueOf(511),key,tweak);
@@ -104,7 +99,7 @@ public class EME2IntegerCipherTest {
 
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testKeyNot48Byte() {
+	public void testKeyNot48or64Byte() {
 		EME2IntegerCipher eme2 = new EME2IntegerCipher(intMS);
 		eme2.encrypt(BigInteger.valueOf(5), new byte[9],tweak); // 72Bit Key
 	}
