@@ -2,7 +2,6 @@ package ch.bfh.fpe.intEnc;
 
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -13,17 +12,16 @@ import ch.bfh.fpe.messageSpace.IntegerMessageSpace;
 import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
 
 /**
- * This class is an implementation of "EME2: extending EME to handle arbitrary-length messages with associated data": <a href="http://eprint.iacr.org/2004/125.pdf">http://eprint.iacr.org/2004/125.pdf</a><br><br>
- * EME2 is a Format Preserving Encryption (FPE) Cipher for arbitrary long numbers starting by 128 bit.<br>
+ * This class is an implementation of EME2 formerly known as EME*. Reference: "EME*: extending EME to handle arbitrary-length messages with associated data": <a href="http://eprint.iacr.org/2004/125.pdf">http://eprint.iacr.org/2004/125.pdf</a><br><br>
+ * EME2 is a Format Preserving Encryption (FPE) Cipher for arbitrary long numbers with a minimum of 128 bits.<br>
  * The EME2IntegerCipher encrypts a given input number from a specified range in such way, that the output value is also a number from the same range.
  * This range is defined by an IntegerMessageSpace delivered in the constructor.<br/><br/>
+ *
+ * Following a simple example how to use a EME2Cipher. The goal in this example is to encrypt the number 12345 into another number in the range given by the IntegerMessageSpace:<br/><br/>
  * 
- * ----to do
- * Following a simple example how to use a EME2Cipher. Here the aim is to encrypt the number 12345 into another number in the range represented with 65 bytes:<br/><br/>
- * 
- * <code>byte[] values = new byte[65];
- * 		IntegerMessageSpace intMS = new IntegerMessageSpace(new BigInteger(values));<br>
- *		EME2IntegerCipher eme2 = new EME2IntegerCipher(intMS);<br/><br/>
+ * <code>
+ * 		IntegerMessageSpace intMS = new IntegerMessageSpace(messageSpace.getOrder());//messageSpace contains more than 2^128 values<br> 
+ *		EME2IntegerCipher eme2 = new EME2IntegerCipher(intMS);<br><br>
  *
  *		BigInteger plaintext = BigInteger.valueOf(12345); <br>
  *		BigInteger ciphertext = eme2.encrypt(plaintext,key,tweak); //possible result: 50376352154789653152</code><br/><br/>
@@ -36,7 +34,7 @@ import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
  * The key must be a 46 or 64-byte-array, depending if you want to use AES-128 or AES-256. Be aware that there is a restriction on JDKs for AES-256 and it has first to be unlocked in the policy rules.
  * The key has to be the same for decrypting a value as he was for encrypting it.<br>
  * The tweak is a value similar to an initialization vector (iv) or a salt on hashing in the sense that he prevents a deterministic encryption. 
- * A tweak can be arbitrary long and has to be the same for decrypting a value as he was for encrypting it.<br/><br/>
+ * A tweak can be arbitrary long, even zero if no associated data is available, and has to be the same for decrypting a value as he was for encrypting it.<br/><br/>
  * 
  */
 public class EME2IntegerCipher extends IntegerCipher {
@@ -47,11 +45,11 @@ public class EME2IntegerCipher extends IntegerCipher {
 	/**
 	 * Constructs a EME2IntegerCipher with the maximum value determined in the IntegerMessageSpace.<br>
 	 * @param messageSpace IntegerMessageSpace to determine the number range of the input respectively output of the encryption/decryption
-	 * @throws IllegalArgumentException if the maximum value in the IntegerMessageSpace is smaller than representable with 128 bit
+	 * @throws IllegalArgumentException if the maximum value in the IntegerMessageSpace is smaller than representable with 128 bits
 	 */
 	public EME2IntegerCipher(IntegerMessageSpace messageSpace) {
 		super(messageSpace);
-		if (messageSpace.getOrder().bitLength() < MIN_BIT_LENGTH) throw new IllegalArgumentException("Message space must be bigger than 128 bit");
+		if (messageSpace.getOrder().bitLength() < MIN_BIT_LENGTH) throw new IllegalArgumentException("Message space must be bigger than 128 bits");
 	}
 
 	/**
@@ -75,24 +73,26 @@ public class EME2IntegerCipher extends IntegerCipher {
 	 * First method called from encrypt/decrypt methods. Checks input values for invalidities and throws an Exception if an argument is not valid.<br>
 	 * Encryption/Decryption takes place in a do-while-loop to be sure that the output is a value inside the given message space.<br> 
 	 * If not, the encrypted/decrypted value is encrypted/decrypted once again and so on. This procedure is called "Cycle Walking".
-	 * @param plaintext plaintext of length 16 bytes or more
+	 * @param plaintext plaintext of arbtriray length. Will be padded to length of message space which is in minimum 16 bytes
 	 * @param key 48 or 64 byte EME2-AES key
 	 * @param tweak value of the associated data, of arbitrary byte length (zero or more bytes)
 	 * @param encryption true if this method is called for an encryption, false if for a decryption
-	 * @return
+	 * @throws IllegalArgumentException if input is null or negative, key is not 48 or 64 bytes or tweak is null
+	 * @throws OutsideMessageSpaceException if plaintext/ciphertext is outside the message space
+	 * @return returns a ciphertext or a plaintext, depending on encryption or decryption
 	 */
 	private BigInteger cipher(BigInteger input, byte[] key, byte[] tweak, boolean encryption){
 		
-		BigInteger maxMsValue = getMessageSpace().getOrder().subtract(BigInteger.ONE); //-1 because the order is 1 more than the max allowed value	
-		if (input==null) throw new IllegalArgumentException("Input value must not be null");
+		BigInteger maxMsValue = getMessageSpace().getMaxValue();
+		if (input==null) throw new IllegalArgumentException("Input value must not be null.");
 		if (input.compareTo(BigInteger.ZERO)==-1) throw new IllegalArgumentException("Input value must not be negative");
 		if (input.compareTo(maxMsValue)==1) throw new OutsideMessageSpaceException(input.toString());
 		if (key==null || key.length != 48 && key.length != 64) throw new IllegalArgumentException("Key must be 48 or 64 bytes long");
 		if (tweak==null) throw new IllegalArgumentException("Tweak must not be a null object");
 		
 		try {
-			int maxKeyLen = Cipher.getMaxAllowedKeyLength("AES");
-			if(((key.length-32)*8)>maxKeyLen){
+			int maxKeyLen = Cipher.getMaxAllowedKeyLength("AES"); //maxKeyLen in bits, could throw wrong algorithm exception
+			if(((key.length-32)*8)>maxKeyLen){ //Remove 32 additional bytes of input key and convert to bits
 				throw new IllegalArgumentException("You cannot use a key of this length. The maximum allowed key length by your JDK policy is " + maxKeyLen + " bits.") ;
 			}
 			
@@ -107,9 +107,9 @@ public class EME2IntegerCipher extends IntegerCipher {
 	
 	
 	/**
-	 * The EME2 cipher function is based on a encrypt-mix-encrypt approach. First encrypt the input data, than create masks with the encrypted plaintext and the tweak to xor the data. At the end 
+	 * The EME2 cipher function is based on a encrypt-mix-encrypt approach. First encrypt the input data, than create masks with the encrypted plaintext and the tweak to xor the data ("mixing"). At the end 
 	 * encrypt the whole data again. If the input is not a multiple of 16 bytes, a padding is applied during the function.
-	 * @param input plaintext or ciphertext of length 16 bytes or more
+	 * @param input plaintext or ciphertext of arbtriray length. Will be padded to length of message space which is in minimum 16 bytes
 	 * @param key 48 or 64 byte EME2-AES key
 	 * @param tweak value of the associated data, of arbitrary byte length (zero or more bytes)
 	 * @param encryption true if this method is called for an encryption, false if for a decryption
@@ -151,7 +151,7 @@ public class EME2IntegerCipher extends IntegerCipher {
 				tweakArray.add(Arrays.copyOfRange(tweak, tweak.length-(16-((-tweak.length%16)+16)%16), tweak.length)); 
 				tweakArray.set(tweakArray.size()-1, padToBlocksize(tweakArray.get(tweakArray.size()-1)));
 			}
-			key3 = multByAlpha(key3);
+			key3 = multByAlpha(key3); //Recalculate key3
 			
 			// xor each tweak block with key3, encrypt it and xor again with key3
 			for(int i=0; i<tweakArray.size();i++){
@@ -178,6 +178,7 @@ public class EME2IntegerCipher extends IntegerCipher {
 		byte[] plaintext = new byte[getMessageSpace().getOrder().toByteArray().length]; 
 		System.arraycopy(inputArray, 0, plaintext, plaintext.length-inputArray.length, inputArray.length);
 		
+		//if plaintext is not a multiple of 16 bytes, last block is incomplete
 		boolean lastPlainBlockIncomplete = false;	
 		if(plaintext.length%16 != 0) lastPlainBlockIncomplete=true;	
 			
@@ -187,13 +188,10 @@ public class EME2IntegerCipher extends IntegerCipher {
 			plainArray.add(Arrays.copyOfRange(plaintext, m, m+16));
 		}
 		// If the last block is not 16 bytes, copy the rest in plainArray
-		if(lastPlainBlockIncomplete){
-			plainArray.add(Arrays.copyOfRange(plaintext, (plaintext.length-(16-((-plaintext.length%16)+16)%16)), plaintext.length));
-		}
-				
+		if(lastPlainBlockIncomplete)plainArray.add(Arrays.copyOfRange(plaintext, (plaintext.length-(16-((-plaintext.length%16)+16)%16)), plaintext.length));
+		
 		int indexOfLastBlock = plainArray.size()-1;
 		byte[] copyOfKey2 = key2; // Save a copy of key2
-		
 		
 		// xor each plaintext block (except the last one) with key2 and encrypt it
 		ArrayList<byte[]> encPlainArray = new ArrayList<byte[]>();
@@ -201,7 +199,6 @@ public class EME2IntegerCipher extends IntegerCipher {
 			encPlainArray.add(aesCipher.doFinal(xor(key2,plainArray.get(i))));
 			key2 = multByAlpha(key2);
 		}
-		
 		// if the last block does not have 16 bytes, pad it to blocksize (without an encryption)
 		if(lastPlainBlockIncomplete) encPlainArray.add(padToBlocksize(plainArray.get(indexOfLastBlock)));
 		// else encrypt it like the other ones before
@@ -230,12 +227,12 @@ public class EME2IntegerCipher extends IntegerCipher {
 		ArrayList<byte[]> cipherArray = new ArrayList<byte[]>();
 		cipherArray.add(new byte[16]); //placeholder for first element, is replaced later
 		
-		// xor each plaintext block with mask m
+		// xor each plaintext block with mask m and store in new array
 		for (int i=1; i<indexOfLastBlock;i++){
 			if ((i-1)%128 > 0) { 
 				m = multByAlpha(m);
 				cipherArray.add(xor(encPlainArray.get(i),m));
-			}else{ //Recalculate mask m after every 2048 bytes
+			}else{ //recalculate mask m after every 2048 bytes
 				mp = xor(encPlainArray.get(i),m1);
 				mc = aesCipher.doFinal(mp);
 				m = xor(mp,mc);
@@ -269,7 +266,7 @@ public class EME2IntegerCipher extends IntegerCipher {
 		key2 = copyOfKey2; // Restore key2 with the original value
 		ArrayList<byte[]> encCipherArray = new ArrayList<byte[]>();
 		
-		// encrypt each plaintext block and xor it with key2
+		// encrypt each block and xor it with key2
 		for(int i=0; i<indexOfLastBlock; i++){
 			encCipherArray.add(xor(aesCipher.doFinal(cipherArray.get(i)),key2));
 			key2 = multByAlpha(key2);
@@ -294,12 +291,13 @@ public class EME2IntegerCipher extends IntegerCipher {
 
 	
 	/**
-	 * Pads a byte array with less than 16 bytes to 16 bytes with the first bit set (according to definition of EME2)
+	 * Pads a byte array with less than 16 bytes to 16 bytes with the first bit set (according to definition of EME2). 
+	 * If input is already 16 bytes or bigger it will returned immediately.
 	 * @param input byte array smaller than 16 bytes
 	 * @return 16 bytes long byte array
 	 */
 	private static byte[] padToBlocksize(byte[] input){
-		if(input.length==16) return input;
+		if(input.length>=16) return input;
 		byte[] output = new byte[input.length + (((-input.length%16)+16)%16)];
 		System.arraycopy(input, 0, output, 0, input.length);
 		output[input.length] = (byte) 128; //Set the first bit in the first padded block

@@ -188,6 +188,18 @@ public class StringMessageSpace implements MessageSpace<String> {
 		return order;
 	}
 	
+	
+	/**
+	 * Returns the maximum possible value of this message space,
+	 * therefore the number of elements in the domain minus one.
+	 * @return the order of the message space
+	 */
+	@Override
+	public BigInteger getMaxValue() {
+		return order.subtract(BigInteger.ONE);
+	}
+
+	
 	/**
 	 * Returns true if the language of the automaton that defines this
 	 * message space is finite.

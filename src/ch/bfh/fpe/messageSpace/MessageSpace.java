@@ -38,6 +38,13 @@ public interface MessageSpace<M> {
 	public BigInteger getOrder();
 	
 	/**
+	 * Returns the maximum possible value of this message space,
+	 * therefore the number of elements in the domain minus one.
+	 * @return the order of the message space
+	 */
+	public BigInteger getMaxValue();
+	
+	/**
 	 * Function X -> N, which returns for every element x of message space X
 	 * a natural number n in 0 <= n < getOrder(), which is the position inside
 	 * the message space. The order is defined by the implementing class.

@@ -44,6 +44,17 @@ public class IntegerRangeMessageSpace implements MessageSpace<BigInteger> {
 	public BigInteger getOrder() {
 		return max.subtract(min).add(BigInteger.ONE);
 	}
+	
+	/**
+	 * Returns the maximum possible value of this message space,
+	 * therefore the number of elements in the domain minus one.
+	 * @return the order of the message space
+	 */
+	@Override
+	public BigInteger getMaxValue() {
+		return max.subtract(min);
+	}
+	
 
 	/**
 	 * Returns the position of an element inside the message space.

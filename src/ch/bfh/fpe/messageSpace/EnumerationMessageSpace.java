@@ -50,6 +50,16 @@ public class EnumerationMessageSpace<M> implements MessageSpace<M> {
 	public BigInteger getOrder() {
 		return BigInteger.valueOf(enumList.size());
 	}
+	
+	/**
+	 * Returns the maximum possible value of this message space,
+	 * therefore the number of elements in the domain minus one.
+	 * @return the order of the message space
+	 */
+	@Override
+	public BigInteger getMaxValue() {
+		return BigInteger.valueOf(enumList.size()-1);
+	}
 
 	/**
 	 * Returns the position of an element inside the message space.
@@ -80,5 +90,7 @@ public class EnumerationMessageSpace<M> implements MessageSpace<M> {
 			throw new OutsideMessageSpaceException("Rank " + rank);
 		}
 	}
+
+
 
 }

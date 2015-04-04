@@ -13,7 +13,6 @@ import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
 
 public class EME2IntegerCipherTest {
 	
-	
 	byte[] key = new byte[48];
 	byte[] tweak = new byte[37];
 	byte[] plaintext = new byte[43];
@@ -36,12 +35,10 @@ public class EME2IntegerCipherTest {
 		EME2IntegerCipher eme2 = new EME2IntegerCipher(intMS);
 
 		BigInteger plaintext2 = BigInteger.valueOf(511);
-		//BigInteger plaintext2 = new BigInteger(plaintext);
 		BigInteger ciphertext = eme2.encrypt(plaintext2, key,tweak);
 		BigInteger decPlaintext = eme2.decrypt(ciphertext, key,tweak);			 
 		assertEquals(plaintext2, decPlaintext);
 	}
-	
 	
 	
 	@Test(expected = IllegalArgumentException.class)
@@ -74,7 +71,6 @@ public class EME2IntegerCipherTest {
 		EME2IntegerCipher eme2 = new EME2IntegerCipher(intMS);
 		eme2.encrypt(new BigInteger(plaintext), key,null);
 	}
-	
 
 	@Test
 	public void testEncryptZeroTweak() {
@@ -96,7 +92,6 @@ public class EME2IntegerCipherTest {
 		BigInteger cipher2 = eme2.encrypt(new BigInteger(plaintext),key,tweak);
 		assertEquals(cipher1, cipher2);
 	}
-
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testKeyNot48or64Byte() {
@@ -198,28 +193,5 @@ public class EME2IntegerCipherTest {
 		BigInteger ciphertext = eme2.encrypt(new BigInteger(plaintext), key,tweak);
 		BigInteger decPlaintext = eme2.decrypt(ciphertext, key,tweak);			 
 		assertEquals(new BigInteger(plaintext), decPlaintext);
-	}
-
-	/*
-	@Test
-	public void testEncryptDecryptWholeMS() {
-		int msLimit =  500000;
-		//IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.valueOf(msLimit));
-		EME2IntegerCipher eme2 = new EME2IntegerCipher(intMS);
-		byte[] byteplaintext = new byte[243];
-		
-		BigInteger ciphertext,plaintext2;
-	
-		for (int i=0; i<msLimit;i++){
-			byteplaintext[0] = (byte)i;
-		 BigInteger plaintext = new BigInteger(byteplaintext);
-		 ciphertext = eme2.encrypt(plaintext, key,tweak);
-		 plaintext2 = eme2.decrypt(ciphertext, key,tweak);
-		 System.out.println(plaintext + " >>enc>> " + ciphertext+ " >>dec>> " + plaintext2);	 
-		}	
-	
-	}
-	*/
-	
+	}	
 }
-

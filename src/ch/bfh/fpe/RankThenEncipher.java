@@ -68,9 +68,9 @@ public class RankThenEncipher<M> extends FPECipher<M> {
 		super(messageSpace);
 		if (messageSpace==null) throw new IllegalArgumentException("MessageSpace must not be null");
 		if (messageSpace.getOrder().bitLength()>128){
-			integerCipher = new EME2IntegerCipher(new IntegerMessageSpace(messageSpace.getOrder().subtract(BigInteger.ONE)));
+			integerCipher = new EME2IntegerCipher(new IntegerMessageSpace(messageSpace.getMaxValue()));
 		} else {
-			integerCipher = new FFXIntegerCipher(new IntegerMessageSpace(messageSpace.getOrder().subtract(BigInteger.ONE)));
+			integerCipher = new FFXIntegerCipher(new IntegerMessageSpace(messageSpace.getMaxValue()));
 		}
 	
 	}

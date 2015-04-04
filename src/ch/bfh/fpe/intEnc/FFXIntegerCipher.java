@@ -90,7 +90,7 @@ public class FFXIntegerCipher extends IntegerCipher {
 	 */
 	private BigInteger cipher(BigInteger input, byte[] key, byte[] tweak, boolean encryption)
 	{
-		BigInteger maxMsValue = getMessageSpace().getOrder().subtract(BigInteger.ONE); //-1 because the order is 1 more than the max allowed value	
+		BigInteger maxMsValue = getMessageSpace().getMaxValue(); 
 		if (input==null) throw new IllegalArgumentException("Input value must not be null");
 		if (input.compareTo(BigInteger.ZERO)==-1) throw new IllegalArgumentException("Input value must not be negative");
 		if (input.compareTo(maxMsValue)==1) throw new OutsideMessageSpaceException(input.toString());
