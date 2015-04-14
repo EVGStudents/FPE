@@ -53,7 +53,7 @@ import dk.brics.automaton.Transition;
  * //Thus the elements are {0, 00, 01, 000, 001, 010, 011}.<br>
  * StringMessageSpace ms = new StringMessageSpace("0[0-1]*", 3);</code>
  */
-public class StringMessageSpace implements MessageSpace<String> {
+public class StringMessageSpace extends MessageSpace<String> {
 	
 	public static final int DEFAULT_MAX_WORD_LENGTH = 128;
 	private Automaton dfa;
@@ -187,18 +187,6 @@ public class StringMessageSpace implements MessageSpace<String> {
 	public BigInteger getOrder() {
 		return order;
 	}
-	
-	
-	/**
-	 * Returns the maximum possible value of this message space,
-	 * therefore the number of elements in the domain minus one.
-	 * @return the order of the message space
-	 */
-	@Override
-	public BigInteger getMaxValue() {
-		return order.subtract(BigInteger.ONE);
-	}
-
 	
 	/**
 	 * Returns true if the language of the automaton that defines this

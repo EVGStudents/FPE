@@ -27,7 +27,7 @@ import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
  *		BigInteger ciphertext = eme2.encrypt(plaintext,key,tweak); //possible result: 50376352154789653152</code><br/><br/>
  *
  * The ciphertext could now be for example 50376352154789653152. 
- * By putting this number into the decrypt-method of the EME2IntegerCipher, with the same key and the same tweak, you will receive the plaintext, in this case 12345 back.<br/><br/>
+ * By putting this number into the decrypt-method of the EME2IntegerCipher, with the same key and the same tweak, you will receive the plaintext, in this case 12345, back.<br/><br/>
  * 
  * <code>BigInteger decPlaintext = eme2.decrypt(ciphertext, key,tweak); //result: 12345</code><br/><br/>
  * 
@@ -50,6 +50,15 @@ public class EME2IntegerCipher extends IntegerCipher {
 	public EME2IntegerCipher(IntegerMessageSpace messageSpace) {
 		super(messageSpace);
 		if (messageSpace.getOrder().bitLength() < MIN_BIT_LENGTH) throw new IllegalArgumentException("Message space must be bigger than 128 bits");
+	}
+	
+	/**
+	 * Constructs a EME2IntegerCipher with the maximum value determined by the parameter.<br>
+	 * @param maxValue Value to determine the number range of the input respectively output of the encryption/decryption
+	 * @throws IllegalArgumentException if the maximum value in the IntegerMessageSpace is smaller than representable with 128 bits
+	 */
+	public EME2IntegerCipher(BigInteger maxValue) {
+		this(new IntegerMessageSpace(maxValue));
 	}
 
 	/**
@@ -75,7 +84,7 @@ public class EME2IntegerCipher extends IntegerCipher {
 	 * If not, the encrypted/decrypted value is encrypted/decrypted once again and so on. This procedure is called "Cycle Walking".
 	 * @param plaintext plaintext of arbtriray length. Will be padded to length of message space which is in minimum 16 bytes
 	 * @param key 48 or 64 byte EME2-AES key
-	 * @param tweak value of the associated data, of arbitrary byte length (zero or more bytes)
+	 * @param tweak value of the associated data of arbitrary byte length (zero or more bytes)
 	 * @param encryption true if this method is called for an encryption, false if for a decryption
 	 * @throws IllegalArgumentException if input is null or negative, key is not 48 or 64 bytes or tweak is null
 	 * @throws OutsideMessageSpaceException if plaintext/ciphertext is outside the message space
@@ -85,20 +94,20 @@ public class EME2IntegerCipher extends IntegerCipher {
 		
 		BigInteger maxMsValue = getMessageSpace().getMaxValue();
 		if (input==null) throw new IllegalArgumentException("Input value must not be null.");
-		if (input.compareTo(BigInteger.ZERO)==-1) throw new IllegalArgumentException("Input value must not be negative");
-		if (input.compareTo(maxMsValue)==1) throw new OutsideMessageSpaceException(input.toString());
+		if (input.compareTo(BigInteger.ZERO)<0) throw new IllegalArgumentException("Input value must not be negative");
+		if (input.compareTo(maxMsValue)>0) throw new OutsideMessageSpaceException(input.toString());
 		if (key==null || key.length != 48 && key.length != 64) throw new IllegalArgumentException("Key must be 48 or 64 bytes long");
 		if (tweak==null) throw new IllegalArgumentException("Tweak must not be a null object");
 		
 		try {
 			int maxKeyLen = Cipher.getMaxAllowedKeyLength("AES"); //maxKeyLen in bits, could throw wrong algorithm exception
-			if(((key.length-32)*8)>maxKeyLen){ //Remove 32 additional bytes of input key and convert to bits
+			if(((key.length-32)*8)>maxKeyLen){ //check if provided key - 32 byte is less or equal to the max. allowed key length
 				throw new IllegalArgumentException("You cannot use a key of this length. The maximum allowed key length by your JDK policy is " + maxKeyLen + " bits.") ;
 			}
 			
 			do{
 				input = cipherFunction(input,key, tweak, encryption);
-			} while (input.compareTo(maxMsValue)==1) ; //Cycle Walking: While new value is outside of message space, encipher again
+			} while (input.compareTo(maxMsValue)>0) ; //Cycle Walking: While new value is outside of message space, encipher again
 		} catch (GeneralSecurityException e) {
 			throw new IllegalArgumentException("A security exception occured: " + e.getMessage());
 		}
@@ -119,8 +128,8 @@ public class EME2IntegerCipher extends IntegerCipher {
 	private BigInteger cipherFunction(BigInteger input, byte[] key, byte[] tweak, boolean encryption) throws GeneralSecurityException {
 		
 		// Split input key into three subkeys
-		int shift=0;
-		if(key.length==64) shift=16; 
+		int shift=0; //by default use 16 byte AES key
+		if(key.length==64) shift=16; //if provided key is 64 byte, enlarge AES key by 16 byte  
 		
 		byte[] key1=new byte[16+shift],  key2=new byte[16], key3=new byte[16];
 		System.arraycopy(key, 0, key1, 0, 16+shift); //key1: 16 or 32 bytes for the actual AES encryption
@@ -243,7 +252,8 @@ public class EME2IntegerCipher extends IntegerCipher {
 		// treat the last block
 		byte[] lastCipherBlock = null;
 		if(lastPlainBlockIncomplete){
-			lastCipherBlock = xor(plainArray.get(indexOfLastBlock),mm);
+			byte[] truncatedMM = Arrays.copyOfRange(mm, 0, plainArray.get(indexOfLastBlock).length);
+			lastCipherBlock = xor(plainArray.get(indexOfLastBlock),truncatedMM);
 			cipherArray.add(padToBlocksize(lastCipherBlock));	
 		} else if((indexOfLastBlock-1)%128 > 0) {
 			m = multByAlpha(m);
@@ -311,6 +321,7 @@ public class EME2IntegerCipher extends IntegerCipher {
 	 * @return Multiplied ByteArray
 	 */
 	private static byte[] multByAlpha(byte[] input){
+		if (input.length != 16) throw new IllegalArgumentException("Input must be 16 bytes");
 		byte[] output = new byte[16];
 		
 		for(int i=0;i<16;i++){
@@ -323,13 +334,15 @@ public class EME2IntegerCipher extends IntegerCipher {
 	
 	
 	/**
-	 * Calculates the XOR value for two given ByteArrays.
+	 * Calculates the XOR value for two given ByteArrays with the same length.
 	 * @param array1 First ByteArray
 	 * @param array2 Second ByteArray
 	 * @return a ByteArray with the XOR value
+	 * @throws IllegalArgumentException if arrays don't have the same length
 	 */
 	private static byte[] xor(byte[] array1, byte[] array2)
 	{
+		if (array1.length != array2.length) throw new IllegalArgumentException("lenght of array1 (" + array1.length + ") must be equal to the length array2 (" + array2.length + ")");
 		byte[] xorArray = new byte[array1.length];
 		int i = 0;
 		for (byte b : array1){

@@ -43,6 +43,7 @@ import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
  */
 public class FFXIntegerCipher extends IntegerCipher {
 
+	private static final int MIN_BIT_LENGTH = 8;	//the minimum of ffx is 8 bit
 	private static final int MAX_BIT_LENGTH = 128;	//ffx is restricted to 128 bit
 	private static final byte VERS = 1; 			//version: 1
 	private static final byte METHOD = 2;   		//ffx mode: 2 = alternating Feistel
@@ -57,6 +58,16 @@ public class FFXIntegerCipher extends IntegerCipher {
 	public FFXIntegerCipher(IntegerMessageSpace messageSpace) {
 		super(messageSpace);
 		if (messageSpace.getOrder().bitLength() > MAX_BIT_LENGTH) throw new IllegalArgumentException("Message space must not be bigger than 128 bit");
+		if (messageSpace.getOrder().bitLength() < MIN_BIT_LENGTH) throw new IllegalArgumentException("Message space must be bigger or equal to 8 bit");
+	}
+	
+	/**
+	 * Constructs a FFXIntegerCipher with the maximum value determined by the parameter.<br>
+	 * @param maxValue Value to determine the number range of the input respectively output of the encryption/decryption
+	 * @throws IllegalArgumentException if the maximum value in the IntegerMessageSpace is bigger than representable with 128 bit
+	 */
+	public FFXIntegerCipher(BigInteger maxValue) {
+		this(new IntegerMessageSpace(maxValue));
 	}
 		
 	/**
@@ -291,7 +302,7 @@ public class FFXIntegerCipher extends IntegerCipher {
 	 * Determines the number of feistel round necessary for the encryption/decryption to ensure a high security guarantee. <br/>
 	 * The number of rounds depends on the amount of bits needed to represent the order of the message space (less bits -> more rounds).<br/><br/>
 	 * 
-	 * The FFX standard has no mathematically proven security for message space sizes under 8 bits. For high security applications with small numbers the implementation of a tiny-space FPECipher will be needed.
+	 * The FFX standard has no mathematically proven security for message space sizes under 8 bits. For high security applications with small numbers the use of a tiny-space FPECipher will be needed.
 	 *
 	 * @param msBitLength bitlength of the message space which means amount of bits needed to represent the order of the message space
 	 * @return number of feistel rounds determined
@@ -309,6 +320,6 @@ public class FFXIntegerCipher extends IntegerCipher {
 		} else if (msBitLength >= 8) {
 			return 36;
 		} else
-			return 36;
+			throw new RuntimeException("Bit length of message space has to be equal or grater than 8 bit.");
 	}
 }

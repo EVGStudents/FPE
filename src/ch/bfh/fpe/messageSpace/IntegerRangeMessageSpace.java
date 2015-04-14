@@ -15,7 +15,7 @@ import java.math.BigInteger;
  * BigInteger rank = ms.rank(bigInt5); //Returns 0<br/>
  * BigInteger value = ms.unrank(rank); //Returns 5</code>
  */
-public class IntegerRangeMessageSpace implements MessageSpace<BigInteger> {
+public class IntegerRangeMessageSpace extends MessageSpace<BigInteger> {
 
 	private final BigInteger min; //lower limit of message space
 	private final BigInteger max; //upper limit of message space
@@ -43,18 +43,7 @@ public class IntegerRangeMessageSpace implements MessageSpace<BigInteger> {
 	@Override
 	public BigInteger getOrder() {
 		return max.subtract(min).add(BigInteger.ONE);
-	}
-	
-	/**
-	 * Returns the maximum possible value of this message space,
-	 * therefore the number of elements in the domain minus one.
-	 * @return the order of the message space
-	 */
-	@Override
-	public BigInteger getMaxValue() {
-		return max.subtract(min);
-	}
-	
+	}	
 
 	/**
 	 * Returns the position of an element inside the message space.

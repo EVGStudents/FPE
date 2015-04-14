@@ -3,10 +3,8 @@ package ch.bfh.fpe.messageSpace;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Message space that is defined over an enumList.
@@ -17,7 +15,7 @@ import java.util.Set;
  * for every subsequent use.
  * @param <M> type of the elements of the enumList
  */
-public class EnumerationMessageSpace<M> implements MessageSpace<M> {
+public class EnumerationMessageSpace<M> extends MessageSpace<M> {
 	
 	private final List<M> enumList = new ArrayList<M>(); //Elements of the message space
 	private final Map<M,BigInteger> enumMap = new HashMap<M,BigInteger>(); //Elements with position index for fast rank
@@ -49,16 +47,6 @@ public class EnumerationMessageSpace<M> implements MessageSpace<M> {
 	@Override
 	public BigInteger getOrder() {
 		return BigInteger.valueOf(enumList.size());
-	}
-	
-	/**
-	 * Returns the maximum possible value of this message space,
-	 * therefore the number of elements in the domain minus one.
-	 * @return the order of the message space
-	 */
-	@Override
-	public BigInteger getMaxValue() {
-		return BigInteger.valueOf(enumList.size()-1);
 	}
 
 	/**

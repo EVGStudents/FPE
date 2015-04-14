@@ -23,4 +23,12 @@ public abstract class IntegerCipher extends FPECipher<BigInteger> {
 		super(messageSpace);
 	}
 	
+	/**
+	 * Constructs a IntegerCipher for the number range determined by the parameter.
+	 * @param maxValue Value to determine the number range of the input respectively output of the encryption/decryption
+	 */
+	public IntegerCipher(BigInteger maxValue) {
+		super(new IntegerMessageSpace(maxValue));
+	}
+	
 }

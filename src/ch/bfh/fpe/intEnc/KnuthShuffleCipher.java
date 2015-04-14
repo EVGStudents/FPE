@@ -20,6 +20,10 @@ public class KnuthShuffleCipher extends IntegerCipher {
 	public KnuthShuffleCipher(IntegerMessageSpace messageSpace) {
 		super(messageSpace);
 	}
+	
+	public KnuthShuffleCipher(BigInteger maxValue) {
+		this(new IntegerMessageSpace(maxValue));
+	}
 
 	/**
 	 * {@inheritDoc}

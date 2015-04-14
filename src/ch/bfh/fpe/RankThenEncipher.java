@@ -5,6 +5,7 @@ import java.math.BigInteger;
 import ch.bfh.fpe.intEnc.EME2IntegerCipher;
 import ch.bfh.fpe.intEnc.FFXIntegerCipher;
 import ch.bfh.fpe.intEnc.IntegerCipher;
+import ch.bfh.fpe.intEnc.KnuthShuffleCipher;
 import ch.bfh.fpe.messageSpace.MessageSpace;
 import ch.bfh.fpe.messageSpace.IntegerMessageSpace;
 
@@ -61,16 +62,24 @@ public class RankThenEncipher<M> extends FPECipher<M> {
 	/**
 	 * Constructs a RankThenEncipher-FPE-Cipher.
 	 * Depending on the order, the most secure and then efficient integer cipher is chosen.
-	 * At the moment, only the FFXIntegerCipher (with up to 128 bit) is implemented.
+	 * At the moment, KnuthShuffleCipher, FFXIntegerCipher and EME2IntegerCipher are implemented.
 	 * @param messageSpace defines the format of plaintext and ciphertext.
 	 */
 	public RankThenEncipher(MessageSpace<M> messageSpace) {
 		super(messageSpace);
 		if (messageSpace==null) throw new IllegalArgumentException("MessageSpace must not be null");
-		if (messageSpace.getOrder().bitLength()>128){
-			integerCipher = new EME2IntegerCipher(new IntegerMessageSpace(messageSpace.getMaxValue()));
-		} else {
-			integerCipher = new FFXIntegerCipher(new IntegerMessageSpace(messageSpace.getMaxValue()));
+		
+		//up to 7 bit use Knuth Shuffle
+		if (messageSpace.getOrder().bitLength()<8){ 
+			integerCipher = new KnuthShuffleCipher(messageSpace.getMaxValue());
+		}
+		//up to 128 bit use FFX
+		else if (messageSpace.getOrder().bitLength()<=128) {
+			integerCipher = new FFXIntegerCipher(messageSpace.getMaxValue());
+		}
+		//for more than 128 bit use EME2
+		else {
+			integerCipher = new EME2IntegerCipher(messageSpace.getMaxValue());
 		}
 	
 	}

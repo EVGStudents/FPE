@@ -28,21 +28,23 @@ import java.math.BigInteger;
  * @param <M> type of the elements of the domain. Thus the type of the
  * value that is ranked and the type of unrank's return value.
  */
-public interface MessageSpace<M> {
+public abstract class MessageSpace<M> {
 	
 	/**
 	 * Returns the order of this message space,
 	 * therefore the number of elements in the domain.
 	 * @return the order of the message space
 	 */
-	public BigInteger getOrder();
+	public abstract BigInteger getOrder();
 	
 	/**
 	 * Returns the maximum possible value of this message space,
 	 * therefore the number of elements in the domain minus one.
 	 * @return the order of the message space
 	 */
-	public BigInteger getMaxValue();
+	public BigInteger getMaxValue() {
+		return getOrder().subtract(BigInteger.ONE);
+	}
 	
 	/**
 	 * Function X -> N, which returns for every element x of message space X
@@ -51,7 +53,7 @@ public interface MessageSpace<M> {
 	 * @param value that should be ranked
 	 * @return the position of the value inside the message space
 	 */
-	public BigInteger rank(M value);
+	public abstract BigInteger rank(M value);
 	
 	/**
 	 * Inverse function of rank.
@@ -59,6 +61,6 @@ public interface MessageSpace<M> {
 	 * @param rank position of an element
 	 * @return the element at the specified position
 	 */
-	public M unrank(BigInteger rank);
+	public abstract M unrank(BigInteger rank);
 	
 }
