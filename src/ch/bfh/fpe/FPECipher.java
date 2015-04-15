@@ -44,7 +44,7 @@ public abstract class FPECipher<M> {
 	 * @param tweak random bytes to prevent deterministic encryption
 	 * @return encrypted value of plaintext
 	 */
-	public abstract M encrypt(M plaintext, byte[] key, byte[] tweak);
+	public abstract M encrypt(M plaintext, Key key, byte[] tweak);
 	
 	
 	/**
@@ -54,6 +54,6 @@ public abstract class FPECipher<M> {
 	 * @param tweak must be exactly the same tweak as used for the encryption of this ciphertext
 	 * @return decrypted value of ciphertext
 	 */
-	public abstract M decrypt(M ciphertext, byte[] key, byte[] tweak);
+	public abstract M decrypt(M ciphertext, Key key, byte[] tweak);
 	
 }

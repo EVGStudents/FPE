@@ -7,7 +7,6 @@ import ch.bfh.fpe.intEnc.FFXIntegerCipher;
 import ch.bfh.fpe.intEnc.IntegerCipher;
 import ch.bfh.fpe.intEnc.KnuthShuffleCipher;
 import ch.bfh.fpe.messageSpace.MessageSpace;
-import ch.bfh.fpe.messageSpace.IntegerMessageSpace;
 
 /** 
  * This class is an implementation of the "Rank-then-Encipher Approach" for Format Preserving Encryption Cipher: <a href="https://eprint.iacr.org/2009/251.pdf">https://eprint.iacr.org/2009/251.pdf</a><br><br>
@@ -105,7 +104,7 @@ public class RankThenEncipher<M> extends FPECipher<M> {
 	 * @throws OutsideMessageSpaceException if plaintext is outside the message space.
 	 */
 	@Override
-	public M encrypt(M plaintext, byte[] key, byte[] tweak) {
+	public M encrypt(M plaintext, Key key, byte[] tweak) {
 		BigInteger rank = getMessageSpace().rank(plaintext);
 		BigInteger rankEnc = integerCipher.encrypt(rank, key, tweak);
 		M ciphertext = getMessageSpace().unrank(rankEnc);
@@ -117,7 +116,7 @@ public class RankThenEncipher<M> extends FPECipher<M> {
 	 * @throws OutsideMessageSpaceException if ciphertext is outside the message space.
 	 */
 	@Override
-	public M decrypt(M ciphertext, byte[] key, byte[] tweak) {
+	public M decrypt(M ciphertext, Key key, byte[] tweak) {
 		BigInteger rankEnc = getMessageSpace().rank(ciphertext);
 		BigInteger rank = integerCipher.decrypt(rankEnc, key, tweak);
 		M plaintext = getMessageSpace().unrank(rank);

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 
 import org.junit.Test;
 
+import ch.bfh.fpe.Key;
 import ch.bfh.fpe.RankThenEncipher;
 import ch.bfh.fpe.intEnc.FFXIntegerCipher;
 import ch.bfh.fpe.intEnc.IntegerCipher;
@@ -17,7 +18,7 @@ import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
 
 
 public class RankThenEncipherTest {
-	byte[] key = new byte[]{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+	Key key = new Key(new byte[]{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15});
 	byte[] tweak = new byte[]{0,1,2,3,4,5,6,7};
 	
 
@@ -35,12 +36,12 @@ public class RankThenEncipherTest {
 		new RankThenEncipher<BigInteger>(irMs, iC);
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testKeyNot128Bit() {
 		IntegerRangeMessageSpace iMs = new IntegerRangeMessageSpace(BigInteger.ONE, BigInteger.TEN);
 		RankThenEncipher<BigInteger> rte = new RankThenEncipher<BigInteger>(iMs);
-		byte[] keyTooShort = new byte[5];
-		rte.encrypt(BigInteger.ONE, keyTooShort,tweak); 
+		Key shortKey = new Key(new byte[5]);
+		rte.encrypt(BigInteger.ONE, shortKey,tweak); 
 	}
 
 	@Test(expected = OutsideMessageSpaceException.class)
@@ -86,9 +87,7 @@ public class RankThenEncipherTest {
 		list.add("b");
 		list.add("c");
 		EnumerationMessageSpace<String> eMs = new EnumerationMessageSpace<String>(list);
-		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.valueOf(2));
-		FFXIntegerCipher iC = new FFXIntegerCipher(iMs);
-		RankThenEncipher<String> rte = new RankThenEncipher<String>(eMs, iC);
+		RankThenEncipher<String> rte = new RankThenEncipher<String>(eMs);
 		String plaintext = "b";
 		String ciphertext = rte.encrypt(plaintext, key, tweak);
 		String decPlaintext = rte.decrypt(ciphertext, key, tweak);
@@ -100,7 +99,7 @@ public class RankThenEncipherTest {
 		IntegerRangeMessageSpace iMs = new IntegerRangeMessageSpace(BigInteger.ONE, BigInteger.TEN);
 		RankThenEncipher<BigInteger> rte = new RankThenEncipher<BigInteger>(iMs);
 		BigInteger plaintext = BigInteger.valueOf(5);
-		byte[] key2 = new byte[]{15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0};
+		Key key2 = new Key(new byte[]{15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0});
 		BigInteger ciphertext = rte.encrypt(plaintext, key, tweak);
 		BigInteger decPlaintext = rte.decrypt(ciphertext, key2, tweak);
 		assertFalse(plaintext == decPlaintext);
@@ -111,7 +110,7 @@ public class RankThenEncipherTest {
 		IntegerRangeMessageSpace iMs = new IntegerRangeMessageSpace(BigInteger.ONE, BigInteger.TEN);
 		RankThenEncipher<BigInteger> rte = new RankThenEncipher<BigInteger>(iMs);
 		BigInteger plaintext = BigInteger.valueOf(5);
-		byte[] key = new byte[16];
+		Key key = new Key(new byte[16]);
 		BigInteger correctCipher = rte.encrypt(plaintext, key, tweak);
 		BigInteger wrongCipher = correctCipher.add(BigInteger.ONE);
 		BigInteger decPlaintext = rte.decrypt(wrongCipher, key, tweak);

@@ -1,14 +1,21 @@
 package ch.bfh.fpe.intEnc;
 
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
+import java.security.spec.KeySpec;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
 import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import ch.bfh.fpe.Key;
 import ch.bfh.fpe.messageSpace.IntegerMessageSpace;
 import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
 
@@ -16,6 +23,8 @@ public class KnuthShuffleCipher extends IntegerCipher {
 	
 	private HashMap<byte[],HashMap<byte[],HashMap<BigInteger,BigInteger>>> plaintextPermutationTable = new HashMap<>();
 	private HashMap<byte[],HashMap<byte[],HashMap<BigInteger,BigInteger>>> ciphertextPermutationTable = new HashMap<>();
+	private static final int PBKDF_ITERATION_COUNT = 10000;
+	private static final byte[] PBKDF_SALT = new byte[]{21,3,-94,-128,0,127,13,43,-19,120,20,94,-62,101,14,91};;
 
 	public KnuthShuffleCipher(IntegerMessageSpace messageSpace) {
 		super(messageSpace);
@@ -29,7 +38,7 @@ public class KnuthShuffleCipher extends IntegerCipher {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public BigInteger encrypt(BigInteger plaintext, byte[] key, byte[] tweak) {
+	public BigInteger encrypt(BigInteger plaintext, Key key, byte[] tweak) {
 		return permuteValue(plaintext, key, tweak, plaintextPermutationTable);
 	}
 
@@ -37,7 +46,7 @@ public class KnuthShuffleCipher extends IntegerCipher {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public BigInteger decrypt(BigInteger ciphertext, byte[] key, byte[] tweak) {
+	public BigInteger decrypt(BigInteger ciphertext, Key key, byte[] tweak) {
 		return permuteValue(ciphertext, key, tweak, ciphertextPermutationTable);
 	}
 	
@@ -61,13 +70,15 @@ public class KnuthShuffleCipher extends IntegerCipher {
 	 * @param permutationTable table used for mapping
 	 * @return value after permutation
 	 */
-	private BigInteger permuteValue(BigInteger value, byte[] key, byte[] tweak, HashMap<byte[],HashMap<byte[],HashMap<BigInteger,BigInteger>>> permutationTable) {
+	private BigInteger permuteValue(BigInteger value, Key keyProvided, byte[] tweak, HashMap<byte[],HashMap<byte[],HashMap<BigInteger,BigInteger>>> permutationTable) {
 		//Validate input values
 		if (value == null) throw new IllegalArgumentException("Input value must not be null");
 		if (value.compareTo(BigInteger.ZERO)<0) throw new OutsideMessageSpaceException(value.toString());
 		if (value.compareTo(getMessageSpace().getOrder())>=0) throw new OutsideMessageSpaceException(value.toString());
-		if (tweak==null || tweak.length != 16) throw new IllegalArgumentException("Tweak must be 128 Bit long");
-		if (key==null || key.length != 16) throw new IllegalArgumentException("Key must be 128 Bit long");
+		if (tweak==null) throw new IllegalArgumentException("Tweak must not be null");
+		if (keyProvided==null) throw new IllegalArgumentException("Key must not be null");
+		byte[] key = keyProvided.getKey(16);
+		if (tweak.length != 16) tweak = deriveTweak(tweak);
 		
 		//check if permutation available for tweak/key, if not generate
 		if (!permutationTable.containsKey(key) ||
@@ -140,6 +151,25 @@ public class KnuthShuffleCipher extends IntegerCipher {
 			tweakCiphertext.put(tweak, ciphertext);
 			plaintextPermutationTable.put(key, tweakPlaintext);
 			ciphertextPermutationTable.put(key, tweakCiphertext);
+		}
+	}
+	
+	/**
+	 * When tweak do not have a length of 16 byte,
+	 * use PKCS#5 (PBKDF2 with SHA1-HMAC) derive it from provided tweak.
+	 * @param length desired key length in bytes
+	 */
+	private byte[] deriveTweak(byte[] tweak) {
+		
+		try {
+			SecretKeyFactory kf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+			Charset latin1Charset = Charset.forName("ISO-8859-1"); 
+			char[] pw = latin1Charset.decode(ByteBuffer.wrap(tweak)).array();         
+		    KeySpec specs = new PBEKeySpec(pw, PBKDF_SALT, PBKDF_ITERATION_COUNT, 128);
+		    SecretKey key = kf.generateSecret(specs);
+		    return key.getEncoded();
+		} catch (GeneralSecurityException e) {
+			throw new RuntimeException("Key derivation failed. " + e.getMessage()); 
 		}
 	}
 	

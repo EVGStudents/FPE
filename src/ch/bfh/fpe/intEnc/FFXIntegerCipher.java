@@ -1,15 +1,16 @@
 package ch.bfh.fpe.intEnc;
 
 import java.math.BigInteger;
-
 import java.util.Arrays;
 import java.util.BitSet;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
 import java.security.GeneralSecurityException;
 
+import ch.bfh.fpe.Key;
 import ch.bfh.fpe.messageSpace.IntegerMessageSpace;
 import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
 
@@ -74,7 +75,7 @@ public class FFXIntegerCipher extends IntegerCipher {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public BigInteger encrypt(BigInteger plaintext, byte[] key, byte[] tweak){
+	public BigInteger encrypt(BigInteger plaintext, Key key, byte[] tweak){
 		return cipher(plaintext,key, tweak, true);
 	}
 	
@@ -82,7 +83,7 @@ public class FFXIntegerCipher extends IntegerCipher {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public BigInteger decrypt(BigInteger ciphertext, byte[] key, byte[] tweak){
+	public BigInteger decrypt(BigInteger ciphertext, Key key, byte[] tweak){
 		return cipher(ciphertext,key, tweak, false);
 	}
 	
@@ -92,20 +93,20 @@ public class FFXIntegerCipher extends IntegerCipher {
 	 * Encryption/Decryption takes place in a do-while-loop to be sure that the output is a value inside the given message space.<br> 
 	 * If not, the encrypted/decrypted value is encrypted/decrypted once again and so on. This procedure is called "Cycle Walking".
 	 * @param input plaintext to be encrypted or ciphertext to be decrypted
-	 * @param key randomly computed 16-byte key 
+	 * @param key randomly computed key 
 	 * @param tweak arbitrary bytes to prevent deterministic encryption
 	 * @param encryption true if this method is called for an encryption, false if for a decryption
 	 * @return returns a ciphertext or a plaintext, depending on encryption or decryption
 	 * @throws IllegalArgumentException if input is null or negative, key is not 128 bit or tweak is longer than 64 bit
 	 * @throws OutsideMessageSpaceException if plaintext/ciphertext is outside the message space
 	 */
-	private BigInteger cipher(BigInteger input, byte[] key, byte[] tweak, boolean encryption)
+	private BigInteger cipher(BigInteger input, Key key, byte[] tweak, boolean encryption)
 	{
 		BigInteger maxMsValue = getMessageSpace().getMaxValue(); 
 		if (input==null) throw new IllegalArgumentException("Input value must not be null");
 		if (input.compareTo(BigInteger.ZERO)==-1) throw new IllegalArgumentException("Input value must not be negative");
 		if (input.compareTo(maxMsValue)==1) throw new OutsideMessageSpaceException(input.toString());
-		if (key==null || key.length != 16) throw new IllegalArgumentException("Key must be 128 Bit long");
+		if (key==null) throw new IllegalArgumentException("Key must not be null");
 		if (tweak==null) throw new IllegalArgumentException("Tweak must not be null");
 
 		try {
@@ -127,13 +128,13 @@ public class FFXIntegerCipher extends IntegerCipher {
 	 * After these rounds the two parts are concatenated again and returned as the ciphertext/plaintext.
 	 * 
 	 * @param input plaintext to be encrypted or ciphertext to be decrypted
-	 * @param key randomly computed 16-byte key 
+	 * @param key randomly computed key 
 	 * @param tweak arbitrary bytes to prevent deterministic encryption
 	 * @param encryption true if this method is called for an encryption, false if for a decryption
 	 * @return returns a ciphertext or a plaintext, depending on encryption or decryption
 	 * @throws GeneralSecurityException wrong security parameter in AES-CBC-MAC. Should not happen because we control/check all parameters.
 	 */
-	private BigInteger cipherFunction(BigInteger input, byte[] key, byte[] tweak, boolean encryption)  throws GeneralSecurityException 
+	private BigInteger cipherFunction(BigInteger input, Key key, byte[] tweak, boolean encryption)  throws GeneralSecurityException 
 	{
 		int msBitLength = getMessageSpace().getOrder().bitLength();
 		int middleIndex = (msBitLength+1) / 2; 
@@ -149,7 +150,7 @@ public class FFXIntegerCipher extends IntegerCipher {
 		// Initialize AES 
 		IvParameterSpec ivspec = new IvParameterSpec(new byte[16]); //zero initialization vector is necessary, makes the AES encryption act as an AES CBC MAC
 		Cipher aesCipher = Cipher.getInstance("AES/CBC/NoPadding");
-		aesCipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"),ivspec);
+		aesCipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key.getKey(16), "AES"),ivspec);
 		
 		//Construct the precomputable part p of the AES input (stays the same over all rounds) and encrypt it
 		byte[] p = new byte[]{0,VERS,METHOD,ADDITION,RADIX, (byte)msBitLength, (byte)middleIndex, (byte)nrOfRounds, 0,0,0,0,0,0,0,(byte)tweak.length}; //total 16 bytes 

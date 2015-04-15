@@ -6,14 +6,15 @@ import java.math.BigInteger;
 
 import org.junit.Test;
 
+import ch.bfh.fpe.Key;
 import ch.bfh.fpe.intEnc.KnuthShuffleCipher;
 import ch.bfh.fpe.messageSpace.IntegerMessageSpace;
 import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
 
 public class KnuthShuffleCipherTest {
 	
-	static byte[] key = new byte[]{28,93,-94,-128,0,117,23,43,-19,120,86,94,-62,101,14,21};
-	static byte[] key2 = new byte[]{29,93,-94,-128,0,117,23,43,-19,120,86,94,-62,101,14,21};
+	static Key key = new Key(new byte[]{28,93,-94,-128,0,117,23,43,-19,120,86,94,-62,101,14,21});
+	static Key key2 = new Key(new byte[]{29,93,-94,-128,0,117,23,43,-19,120,86,94,-62,101,14,21});
 	static byte[] tweak = new byte[]{-13,87,22,94,28,43,46,-17,-20,87,22,94,28,43,46,-19};
 	static byte[] tweak2 = new byte[]{-14,87,22,94,28,43,46,-17,-20,87,22,94,28,43,46,-19};
 	IntegerMessageSpace ims10 = new IntegerMessageSpace(BigInteger.TEN);
@@ -54,16 +55,16 @@ public class KnuthShuffleCipherTest {
 		assertNotNull(output);
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
-	public void testWrongKeyLength() {
+	@Test
+	public void testDifferentKeyLength() {
 		KnuthShuffleCipher knuth = new KnuthShuffleCipher(ims10);
 		BigInteger input = BigInteger.TEN;
-		byte[] key = new byte[15];
+		Key key = new Key(new byte[15]);
 		knuth.encrypt(input, key, tweak);
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
-	public void testWrongTweakLength() {
+	@Test
+	public void testDifferentTweakLength() {
 		KnuthShuffleCipher knuth = new KnuthShuffleCipher(ims10);
 		BigInteger input = BigInteger.TEN;
 		byte[] tweak = new byte[15];

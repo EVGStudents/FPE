@@ -8,6 +8,7 @@ import java.util.Arrays;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
+import ch.bfh.fpe.Key;
 import ch.bfh.fpe.messageSpace.IntegerMessageSpace;
 import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
 
@@ -39,7 +40,8 @@ import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
  */
 public class EME2IntegerCipher extends IntegerCipher {
 	
-	private static final int MIN_BIT_LENGTH = 128;	
+	private static final int MIN_BIT_LENGTH = 128;
+	private int keyLength = 0; //0=not explicit specified or 128 respectively 256 bit
 
 	
 	/**
@@ -60,12 +62,35 @@ public class EME2IntegerCipher extends IntegerCipher {
 	public EME2IntegerCipher(BigInteger maxValue) {
 		this(new IntegerMessageSpace(maxValue));
 	}
+	
+	/**
+	 * Constructs a EME2IntegerCipher with the maximum value determined in the IntegerMessageSpace.<br>
+	 * @param messageSpace IntegerMessageSpace to determine the number range of the input respectively output of the encryption/decryption
+	 * @param keyLength set explicit key length to 128 or 256 bit. Otherwise max. allowed value on the system is chosen
+	 * @throws IllegalArgumentException if the maximum value in the IntegerMessageSpace is smaller than representable with 128 bits
+	 */
+	public EME2IntegerCipher(IntegerMessageSpace messageSpace, int keyLength) {
+		super(messageSpace);
+		if (messageSpace.getOrder().bitLength() < MIN_BIT_LENGTH) throw new IllegalArgumentException("Message space must be bigger than 128 bits");
+		if (keyLength != 128 && keyLength != 256) throw new IllegalArgumentException("Illegal key length. Must be 128 or 256 bit.");
+		this.keyLength = keyLength;
+	}
+	
+	/**
+	 * Constructs a EME2IntegerCipher with the maximum value determined by the parameter.<br>
+	 * @param maxValue Value to determine the number range of the input respectively output of the encryption/decryption
+	 * @param keyLength set explicit key length to 128 or 256 bit. Otherwise max. allowed value on the system is chosen
+	 * @throws IllegalArgumentException if the maximum value in the IntegerMessageSpace is smaller than representable with 128 bits
+	 */
+	public EME2IntegerCipher(BigInteger maxValue, int keyLength) {
+		this(new IntegerMessageSpace(maxValue), keyLength);
+	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public BigInteger encrypt(BigInteger plaintext, byte[] key, byte[] tweak) {
+	public BigInteger encrypt(BigInteger plaintext, Key key, byte[] tweak) {
 		return cipher(plaintext, key, tweak, true);
 	}
 
@@ -73,7 +98,7 @@ public class EME2IntegerCipher extends IntegerCipher {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public BigInteger decrypt(BigInteger ciphertext, byte[] key, byte[] tweak) {
+	public BigInteger decrypt(BigInteger ciphertext, Key key, byte[] tweak) {
 		return cipher(ciphertext, key, tweak, false);
 	}
 	
@@ -83,28 +108,23 @@ public class EME2IntegerCipher extends IntegerCipher {
 	 * Encryption/Decryption takes place in a do-while-loop to be sure that the output is a value inside the given message space.<br> 
 	 * If not, the encrypted/decrypted value is encrypted/decrypted once again and so on. This procedure is called "Cycle Walking".
 	 * @param plaintext plaintext of arbtriray length. Will be padded to length of message space which is in minimum 16 bytes
-	 * @param key 48 or 64 byte EME2-AES key
+	 * @param key encryption key
 	 * @param tweak value of the associated data of arbitrary byte length (zero or more bytes)
 	 * @param encryption true if this method is called for an encryption, false if for a decryption
 	 * @throws IllegalArgumentException if input is null or negative, key is not 48 or 64 bytes or tweak is null
 	 * @throws OutsideMessageSpaceException if plaintext/ciphertext is outside the message space
 	 * @return returns a ciphertext or a plaintext, depending on encryption or decryption
 	 */
-	private BigInteger cipher(BigInteger input, byte[] key, byte[] tweak, boolean encryption){
+	private BigInteger cipher(BigInteger input, Key key, byte[] tweak, boolean encryption){
 		
 		BigInteger maxMsValue = getMessageSpace().getMaxValue();
 		if (input==null) throw new IllegalArgumentException("Input value must not be null.");
 		if (input.compareTo(BigInteger.ZERO)<0) throw new IllegalArgumentException("Input value must not be negative");
 		if (input.compareTo(maxMsValue)>0) throw new OutsideMessageSpaceException(input.toString());
-		if (key==null || key.length != 48 && key.length != 64) throw new IllegalArgumentException("Key must be 48 or 64 bytes long");
+		if (key==null) throw new IllegalArgumentException("Key must not be a null object");
 		if (tweak==null) throw new IllegalArgumentException("Tweak must not be a null object");
 		
 		try {
-			int maxKeyLen = Cipher.getMaxAllowedKeyLength("AES"); //maxKeyLen in bits, could throw wrong algorithm exception
-			if(((key.length-32)*8)>maxKeyLen){ //check if provided key - 32 byte is less or equal to the max. allowed key length
-				throw new IllegalArgumentException("You cannot use a key of this length. The maximum allowed key length by your JDK policy is " + maxKeyLen + " bits.") ;
-			}
-			
 			do{
 				input = cipherFunction(input,key, tweak, encryption);
 			} while (input.compareTo(maxMsValue)>0) ; //Cycle Walking: While new value is outside of message space, encipher again
@@ -119,18 +139,28 @@ public class EME2IntegerCipher extends IntegerCipher {
 	 * The EME2 cipher function is based on a encrypt-mix-encrypt approach. First encrypt the input data, than create masks with the encrypted plaintext and the tweak to xor the data ("mixing"). At the end 
 	 * encrypt the whole data again. If the input is not a multiple of 16 bytes, a padding is applied during the function.
 	 * @param input plaintext or ciphertext of arbtriray length. Will be padded to length of message space which is in minimum 16 bytes
-	 * @param key 48 or 64 byte EME2-AES key
+	 * @param key encryption key
 	 * @param tweak value of the associated data, of arbitrary byte length (zero or more bytes)
 	 * @param encryption true if this method is called for an encryption, false if for a decryption
 	 * @return a ciphertext or a plaintext, depending on encryption or decryption
 	 * @throws GeneralSecurityException wrong security parameter in AES. Should not happen because we control/check all parameters.
 	 */
-	private BigInteger cipherFunction(BigInteger input, byte[] key, byte[] tweak, boolean encryption) throws GeneralSecurityException {
+	private BigInteger cipherFunction(BigInteger input, Key keyProvided, byte[] tweak, boolean encryption) throws GeneralSecurityException {
+		
+		int shift;
+		byte[] key;
+		if ((Key.isKeyLengthAllowed(256) && keyLength==0) || //use 256 bit key if allowed and not otherwise specified
+				(keyLength==256)) { //or when explicit specified...
+			shift = 16;
+			key = keyProvided.getKey(64);
+		}
+		//...otherwise use 128 bit key
+		else {
+			shift = 0;
+			key = keyProvided.getKey(48);
+		}  
 		
 		// Split input key into three subkeys
-		int shift=0; //by default use 16 byte AES key
-		if(key.length==64) shift=16; //if provided key is 64 byte, enlarge AES key by 16 byte  
-		
 		byte[] key1=new byte[16+shift],  key2=new byte[16], key3=new byte[16];
 		System.arraycopy(key, 0, key1, 0, 16+shift); //key1: 16 or 32 bytes for the actual AES encryption
 		System.arraycopy(key, 16+shift, key2, 0, 16); //key2: 16 bytes for xor of the plaintext

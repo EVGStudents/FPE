@@ -1,10 +1,13 @@
 package ch.bfh.fpe.test;
 
 import static org.junit.Assert.*;
+
 import java.math.BigInteger;
 import java.util.Random;
 
 import org.junit.Test;
+
+import ch.bfh.fpe.Key;
 import ch.bfh.fpe.intEnc.FFXIntegerCipher;
 import ch.bfh.fpe.messageSpace.IntegerMessageSpace;
 import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
@@ -12,7 +15,7 @@ import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
 public class FFXIntegerCipherTest {
 	
 	
-	byte[] key = new byte[]{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+	Key key = new Key(new byte[]{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15});
 	byte[] tweak = new byte[]{0,1,2,3,4,5,6};
 
 
@@ -38,28 +41,28 @@ public class FFXIntegerCipherTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testEncryptNullPlaintext() {
-		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.TEN);
+		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.valueOf(1000));
 		FFXIntegerCipher ffx = new FFXIntegerCipher(iMs);
 		ffx.encrypt(null, key,tweak);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testDecryptNullCiphertext() {
-		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.TEN);
+		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.valueOf(1000));
 		FFXIntegerCipher ffx = new FFXIntegerCipher(iMs);
 		ffx.decrypt(null, key,tweak);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testEncrypttNullKey() {
-		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.TEN);
+		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.valueOf(1000));
 		FFXIntegerCipher ffx = new FFXIntegerCipher(iMs);
 		ffx.encrypt(BigInteger.valueOf(2), null,tweak);
 	}
 	
 	@Test(expected = IllegalArgumentException.class)
 	public void testEncrypttTweakNull() {
-		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.TEN);
+		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.valueOf(1000));
 		FFXIntegerCipher ffx = new FFXIntegerCipher(iMs);
 		ffx.encrypt(BigInteger.valueOf(2), key,null);
 	}
@@ -89,11 +92,11 @@ public class FFXIntegerCipherTest {
 	}
 
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testKeyNot128Bit() {
-		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.TEN);
+		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.valueOf(1000));
 		FFXIntegerCipher ffx = new FFXIntegerCipher(iMs);
-		ffx.encrypt(BigInteger.valueOf(5), new byte[9],tweak); // 72Bit Key
+		ffx.encrypt(BigInteger.valueOf(5), new Key(new byte[9]),tweak); // 72Bit Key
 	}
 	
 	@Test(expected = OutsideMessageSpaceException.class)
@@ -133,7 +136,7 @@ public class FFXIntegerCipherTest {
 	public void testEncryptTwoTimesDifferentKeys() {
 		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.valueOf(61431411));
 		FFXIntegerCipher ffx = new FFXIntegerCipher(iMs);
-		byte[] key2 = new byte[]{15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0};
+		Key key2 = new Key(new byte[]{15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0});
 		BigInteger cipher1 = ffx.encrypt(BigInteger.valueOf(511),key,tweak);
 		BigInteger cipher2 = ffx.encrypt(BigInteger.valueOf(511),key2,tweak);
 		assertFalse(cipher1 == cipher2);
@@ -156,7 +159,7 @@ public class FFXIntegerCipherTest {
 		IntegerMessageSpace iMs = new IntegerMessageSpace(BigInteger.valueOf(1000));
 		FFXIntegerCipher ffx = new FFXIntegerCipher(iMs);
 		BigInteger plaintext = BigInteger.valueOf(5);
-		byte[] key2 = new byte[]{15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0};
+		Key key2 = new Key(new byte[]{15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0});
 		BigInteger ciphertext = ffx.encrypt(plaintext, key,tweak);
 		BigInteger decPlaintext = ffx.decrypt(ciphertext, key2,tweak);
 		assertFalse(plaintext == decPlaintext);
