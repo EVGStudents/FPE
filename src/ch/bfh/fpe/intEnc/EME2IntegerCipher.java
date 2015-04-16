@@ -66,7 +66,7 @@ public class EME2IntegerCipher extends IntegerCipher {
 	/**
 	 * Constructs a EME2IntegerCipher with the maximum value determined in the IntegerMessageSpace.<br>
 	 * @param messageSpace IntegerMessageSpace to determine the number range of the input respectively output of the encryption/decryption
-	 * @param keyLength set explicit key length to 128 or 256 bit. Otherwise max. allowed value on the system is chosen
+	 * @param keyLength set explicit key length to 128 or 256 bit. Default is 128 bit to support interoperability because JCE without unlimited strength policy files is restricted to this size.
 	 * @throws IllegalArgumentException if the maximum value in the IntegerMessageSpace is smaller than representable with 128 bits
 	 */
 	public EME2IntegerCipher(IntegerMessageSpace messageSpace, int keyLength) {
@@ -79,7 +79,7 @@ public class EME2IntegerCipher extends IntegerCipher {
 	/**
 	 * Constructs a EME2IntegerCipher with the maximum value determined by the parameter.<br>
 	 * @param maxValue Value to determine the number range of the input respectively output of the encryption/decryption
-	 * @param keyLength set explicit key length to 128 or 256 bit. Otherwise max. allowed value on the system is chosen
+	 * @param keyLength set explicit key length to 128 or 256 bit. Default is 128 bit to support interoperability because JCE without unlimited strength policy files is restricted to this size.
 	 * @throws IllegalArgumentException if the maximum value in the IntegerMessageSpace is smaller than representable with 128 bits
 	 */
 	public EME2IntegerCipher(BigInteger maxValue, int keyLength) {
@@ -149,12 +149,13 @@ public class EME2IntegerCipher extends IntegerCipher {
 		
 		int shift;
 		byte[] key;
-		if ((Key.isKeyLengthAllowed(256) && keyLength==0) || //use 256 bit key if allowed and not otherwise specified
-				(keyLength==256)) { //or when explicit specified...
+		 //use 256 key when explicit specified
+		if (keyLength==256) {
 			shift = 16;
 			key = keyProvided.getKey(64);
 		}
-		//...otherwise use 128 bit key
+		//Per default use 128 key to provide interoperability because on most systems this is the highest allowed key length.
+		//Key in JCE without unlimited strength policy files is restricted to this size due to judical reasons.
 		else {
 			shift = 0;
 			key = keyProvided.getKey(48);
