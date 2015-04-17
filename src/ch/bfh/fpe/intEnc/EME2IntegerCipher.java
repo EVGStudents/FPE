@@ -115,15 +115,22 @@ public class EME2IntegerCipher extends IntegerCipher {
 	 * @throws OutsideMessageSpaceException if plaintext/ciphertext is outside the message space
 	 * @return returns a ciphertext or a plaintext, depending on encryption or decryption
 	 */
-	private BigInteger cipher(BigInteger input, Key key, byte[] tweak, boolean encryption){
+	private BigInteger cipher(BigInteger input, Key keyProvided, byte[] tweak, boolean encryption){
 		
 		BigInteger maxMsValue = getMessageSpace().getMaxValue();
 		if (input==null) throw new IllegalArgumentException("Input value must not be null.");
 		if (input.compareTo(BigInteger.ZERO)<0) throw new IllegalArgumentException("Input value must not be negative");
 		if (input.compareTo(maxMsValue)>0) throw new OutsideMessageSpaceException(input.toString());
-		if (key==null) throw new IllegalArgumentException("Key must not be a null object");
+		if (keyProvided==null) throw new IllegalArgumentException("Key must not be a null object");
 		if (tweak==null) throw new IllegalArgumentException("Tweak must not be a null object");
 		
+		
+		//Use 256-bit key when explicit specified. Per default use 128-bit key to provide interoperability because on most systems this is the highest allowed key length.
+		//Key in JCE without unlimited strength policy files is restricted to this size due to judical reasons.
+		byte[] key;
+		if (keyLength==256) key = keyProvided.getKey(64); 
+		else key = keyProvided.getKey(48);
+
 		try {
 			do{
 				input = cipherFunction(input,key, tweak, encryption);
@@ -145,32 +152,17 @@ public class EME2IntegerCipher extends IntegerCipher {
 	 * @return a ciphertext or a plaintext, depending on encryption or decryption
 	 * @throws GeneralSecurityException wrong security parameter in AES. Should not happen because we control/check all parameters.
 	 */
-	private BigInteger cipherFunction(BigInteger input, Key keyProvided, byte[] tweak, boolean encryption) throws GeneralSecurityException {
-		
-		int shift;
-		byte[] key;
-		 //use 256 key when explicit specified
-		if (keyLength==256) {
-			shift = 16;
-			key = keyProvided.getKey(64);
-		}
-		//Per default use 128 key to provide interoperability because on most systems this is the highest allowed key length.
-		//Key in JCE without unlimited strength policy files is restricted to this size due to judical reasons.
-		else {
-			shift = 0;
-			key = keyProvided.getKey(48);
-		}  
-		
+	private BigInteger cipherFunction(BigInteger input, byte[] key, byte[] tweak, boolean encryption) throws GeneralSecurityException {
+			
 		// Split input key into three subkeys
-		byte[] key1=new byte[16+shift],  key2=new byte[16], key3=new byte[16];
-		System.arraycopy(key, 0, key1, 0, 16+shift); //key1: 16 or 32 bytes for the actual AES encryption
-		System.arraycopy(key, 16+shift, key2, 0, 16); //key2: 16 bytes for xor of the plaintext
-		System.arraycopy(key, 32+shift, key3, 0,16); //key3: 16 bytes for xor of the tweak
+		byte[] key2 = Arrays.copyOfRange(key, 0, 16);  //key2: 16 bytes for xor of the plaintext
+		byte[] key3 = Arrays.copyOfRange(key, 16, 32); //key3: 16 bytes for xor of the tweak
+		byte[] aesKey = Arrays.copyOfRange(key, 32, key.length); //last 16 or 32 bytes for the actual AES encryption
 		
 		
-		// Initialize AES with ECB-mode. For the tweak-part only the encrypt mode is used, independent of enc/dec of input 
+		// Initialize AES with ECB-mode. For the tweak-part, only the encrypt mode is used, independent of enc/dec of input 
 		Cipher aesCipher = Cipher.getInstance("AES/ECB/NoPadding");
-		aesCipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key1, "AES"));
+		aesCipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(aesKey, "AES"));
 			
 		
 		
@@ -207,7 +199,7 @@ public class EME2IntegerCipher extends IntegerCipher {
 		
 		/* First encryption/decryption pass	*/
 		
-		if (encryption==false) aesCipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key1, "AES")); //if decryption switch AES to decrypt mode
+		if (encryption==false) aesCipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(aesKey, "AES")); //if decryption switch AES to decrypt mode
 				
 		byte[] inputArray = input.toByteArray(); //Convert input BigInteger to a ByteArray
 		
@@ -231,7 +223,9 @@ public class EME2IntegerCipher extends IntegerCipher {
 		if(lastPlainBlockIncomplete)plainArray.add(Arrays.copyOfRange(plaintext, (plaintext.length-(16-((-plaintext.length%16)+16)%16)), plaintext.length));
 		
 		int indexOfLastBlock = plainArray.size()-1;
-		byte[] copyOfKey2 = key2; // Save a copy of key2
+		byte[] copyOfKey2 = key2.clone(); // Save a copy of key2
+		//byte[] copyOfKey2 = new byte[16];
+		//System.arraycopy(key2, 0, copyOfKey2, 0, key2.length); 
 		
 		// xor each plaintext block (except the last one) with key2 and encrypt it
 		ArrayList<byte[]> encPlainArray = new ArrayList<byte[]>();
@@ -252,17 +246,21 @@ public class EME2IntegerCipher extends IntegerCipher {
 		byte[] mp, m, m1, mc, mc1, mm = null;
 		
 		// xor each encrypted plaintext block with the next one and the tweak and store it in mp
-		mp = tweakInBlockSize;
+		mp = tweakInBlockSize.clone();
 		for (byte[] encPlainBlock : encPlainArray) mp = xor(mp,encPlainBlock);
 		
 		// create the masks mm, mc, m m1
 		if(lastPlainBlockIncomplete){
 			mm = aesCipher.doFinal(mp);
-			mc = mc1 = aesCipher.doFinal(mm);	
+			mc = aesCipher.doFinal(mm);	
+			mc1 = mc.clone();
 		} else {
-			mc = mc1 = aesCipher.doFinal(mp);	
+			mc = aesCipher.doFinal(mp);
+			mc1 = mc.clone();
+			
 		}
 		m = m1 = xor(mp,mc);
+		m1 = m.clone();
 
 		ArrayList<byte[]> cipherArray = new ArrayList<byte[]>();
 		cipherArray.add(new byte[16]); //placeholder for first element, is replaced later
@@ -304,7 +302,7 @@ public class EME2IntegerCipher extends IntegerCipher {
 		
 		/* Second encryption/decryption pass */
 		
-		key2 = copyOfKey2; // Restore key2 with the original value
+		key2 = copyOfKey2.clone(); // Restore key2 with the original value
 		ArrayList<byte[]> encCipherArray = new ArrayList<byte[]>();
 		
 		// encrypt each block and xor it with key2
