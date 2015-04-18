@@ -15,7 +15,8 @@ import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
 
 public class EME2IntegerCipherTest {
 	
-	Key key = new Key(new byte[48]);
+	Key key;
+	byte[] keyArray = new byte[]{60,93,-94,-128,0,127,23,43,-19,120,86,94,-62,101,14,21,64,93,-94,-128,0,127,23,43,-19,120,86,94,-62,101,15,29,64,93,-94,-128,0,127,23,43,-19,120,86,94,-62,101,14,30,64,93,-94,-128,0,127,23,43,-19,120,86,94,-62,101,14,22};
 	byte[] tweak = new byte[37];
 	byte[] plaintext = new byte[43];
 	byte[] msMax = new byte[500];
@@ -26,21 +27,32 @@ public class EME2IntegerCipherTest {
     public void initObjects() {
 		//Set the highest byte in the array, so all bytes of the array are going into the BigInteger
 		tweak[0] =  (byte)127;
-		plaintext[0] =  (byte)127;
+		plaintext[0] = (byte)127;
 		msMax[0] =  (byte)127;
+		key = new Key(keyArray);
 		intMS = new IntegerMessageSpace(new BigInteger(msMax));
     }
 	
 	@Test
 	public void testEncryptDecryptSimple() {
 		EME2IntegerCipher eme2 = new EME2IntegerCipher(intMS);
-
 		BigInteger plaintext2 = BigInteger.valueOf(511);
 		BigInteger ciphertext = eme2.encrypt(plaintext2, key,tweak);
 		BigInteger decPlaintext = eme2.decrypt(ciphertext, key,tweak);			 
 		assertEquals(plaintext2, decPlaintext);
 	}
 	
+	@Test
+	public void testEncryptDecryptSimpleKey256() {
+		if (Key.isKeyLengthAllowed(256)) {
+			EME2IntegerCipher eme2 = new EME2IntegerCipher(intMS, 256);
+			BigInteger plaintext2 = BigInteger.valueOf(511);
+			BigInteger ciphertext = eme2.encrypt(plaintext2, key,tweak);
+			BigInteger decPlaintext = eme2.decrypt(ciphertext, key,tweak);			 
+			assertEquals(plaintext2, decPlaintext);
+		}
+		else System.out.println("Warning: Could not test 256 bit key length");
+	}
 	
 	@Test(expected = IllegalArgumentException.class)
 	public void testNotNull() {

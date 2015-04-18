@@ -19,10 +19,27 @@ import ch.bfh.fpe.Key;
 import ch.bfh.fpe.messageSpace.IntegerMessageSpace;
 import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
 
+/**
+ * This class is an implementation of a tiny space FPE scheme based on the Knuth Shuffle.
+ * Phillip Rogaway states in http://web.cs.ucdavis.edu/~rogaway/papers/synopsis.pdf (March 27, 2010)
+ * that the Knuth shuffle is a possibility to build a tiny space FPE but gives no detail on a possible implementation.
+ * 
+ * The Knuth shuffle  algorithm is taken from http://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#Modern_method
+ * and is the key part of the class. An important variance is that one does not want the key to be truly random
+ * but generated deterministically in order to reproduce the permutation for the decryption.
+ * This deterministic random number is generated with AES based on a fixed encryption string. Key and tweak provides the
+ * needed randomned for the permutation.
+ * 
+ * At first use, for every key and tweak a permutation table is created. A permutation table defines which plain text is
+ * mapped to which cipher text and vice versa. Every subsequent encryption/decryption is then a fast table lookup.
+ */
 public class KnuthShuffleCipher extends IntegerCipher {
 	
+	//permutation table consists of two tables: one with the plaintext and one with ciphertext as key
 	private HashMap<byte[],HashMap<byte[],HashMap<BigInteger,BigInteger>>> plaintextPermutationTable = new HashMap<>();
 	private HashMap<byte[],HashMap<byte[],HashMap<BigInteger,BigInteger>>> ciphertextPermutationTable = new HashMap<>();
+	
+	//PBKDF parameters used if tweak has to be adjusted to 16 byte 
 	private static final int PBKDF_ITERATION_COUNT = 10000;
 	private static final byte[] PBKDF_SALT = new byte[]{21,3,-94,-128,0,127,13,43,-19,120,20,94,-62,101,14,91};;
 
@@ -71,7 +88,7 @@ public class KnuthShuffleCipher extends IntegerCipher {
 	 * @return value after permutation
 	 */
 	private BigInteger permuteValue(BigInteger value, Key keyProvided, byte[] tweak, HashMap<byte[],HashMap<byte[],HashMap<BigInteger,BigInteger>>> permutationTable) {
-		//Validate input values
+		//validate input values
 		if (value == null) throw new IllegalArgumentException("Input value must not be null");
 		if (value.compareTo(BigInteger.ZERO)<0) throw new OutsideMessageSpaceException(value.toString());
 		if (value.compareTo(getMessageSpace().getOrder())>=0) throw new OutsideMessageSpaceException(value.toString());

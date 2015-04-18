@@ -41,7 +41,7 @@ import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
 public class EME2IntegerCipher extends IntegerCipher {
 	
 	private static final int MIN_BIT_LENGTH = 128;
-	private int keyLength = 0; //0=not explicit specified or 128 respectively 256 bit
+	private int keyLength = 0; //0=not explicit specified/use default, 128/256=128 respectively 256 bit
 
 	
 	/**
