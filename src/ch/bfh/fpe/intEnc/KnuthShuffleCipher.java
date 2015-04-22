@@ -24,6 +24,12 @@ import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
  * Phillip Rogaway states in http://web.cs.ucdavis.edu/~rogaway/papers/synopsis.pdf (March 27, 2010)
  * that the Knuth shuffle is a possibility to build a tiny space FPE but gives no detail on a possible implementation.
  * 
+ * The limit between tiny-space- and small-space-schemes is not fixed. It is recommended to use KnuthShuffleCipher
+ * for up to 10 bits (one or two digit decimal numbers) and switch to FFXIntegerCipher for larger message spaces.
+ * The advantage of the KnuthShuffleCipher is that the security can be proven mathematically. There is no known attack
+ * against FFXIntegerCipher with tiny domains but also no provable security guarantees.
+ * The disadvantage compared to FFXIntegerCipher is that KnuthShuffleCipher is less performant with large message spaces.
+ * 
  * The Knuth shuffle  algorithm is taken from http://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#Modern_method
  * and is the key part of the class. An important variance is that one does not want the key to be truly random
  * but generated deterministically in order to reproduce the permutation for the decryption.

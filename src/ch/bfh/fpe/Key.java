@@ -22,7 +22,7 @@ public class Key {
 	
 	//fixed PBKDF parameters used to derive key of required length
 	private static final int PBKDF_ITERATION_COUNT = 10000;
-	private static final byte[] PBKDF_SALT = new byte[]{39,3,-94,-128,0,127,13,43,-19,120,20,94,-62,101,14,91};;
+	private static final byte[] PBKDF_SALT = new byte[]{39,3,-94,-128,0,127,13,43,-19,120,20,94,-62,101,14,91};
 	
 	private final HashMap<Integer,byte[]> keys = new HashMap<>(); //buffer keys for fast subsequent access
 	private final int providedKeyLength; //length of the base key
