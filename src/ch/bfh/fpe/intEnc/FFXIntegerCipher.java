@@ -321,6 +321,6 @@ public class FFXIntegerCipher extends IntegerCipher {
 		} else if (msBitLength >= 8) {
 			return 36;
 		} else
-			throw new RuntimeException("Bit length of message space has to be equal or grater than 8 bit.");
+			throw new RuntimeException("Bit length of message space has to be equal or greater than 8 bit.");
 	}
 }

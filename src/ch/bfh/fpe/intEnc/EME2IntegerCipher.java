@@ -32,7 +32,7 @@ import ch.bfh.fpe.messageSpace.OutsideMessageSpaceException;
  * 
  * <code>BigInteger decPlaintext = eme2.decrypt(ciphertext, key,tweak); //result: 12345</code><br/><br/>
  * 
- * The key must be a 46 or 64-byte-array, depending if you want to use AES-128 or AES-256. Be aware that there is a restriction on JDKs for AES-256 and it has first to be unlocked in the policy rules.
+ * The keyLength parameter in the constructor specifies if you want to use AES-128 or AES-256. Be aware that there is a restriction on JDKs for AES-256 and it has first to be unlocked in the policy rules.
  * The key has to be the same for decrypting a value as he was for encrypting it.<br>
  * The tweak is a value similar to an initialization vector (iv) or a salt on hashing in the sense that he prevents a deterministic encryption. 
  * A tweak can be arbitrary long, even zero if no associated data is available, and has to be the same for decrypting a value as he was for encrypting it.<br/><br/>
@@ -143,7 +143,7 @@ public class EME2IntegerCipher extends IntegerCipher {
 	
 	
 	/**
-	 * The EME2 cipher function is based on a encrypt-mix-encrypt approach. First encrypt the input data, than create masks with the encrypted plaintext and the tweak to xor the data ("mixing"). At the end 
+	 * The EME2 cipher function is based on an encrypt-mix-encrypt approach. First encrypt the input data, than create masks with the encrypted plaintext and the tweak to xor the data ("mixing"). At the end 
 	 * encrypt the whole data again. If the input is not a multiple of 16 bytes, a padding is applied during the function.
 	 * @param input plaintext or ciphertext of arbtriray length. Will be padded to length of message space which is in minimum 16 bytes
 	 * @param key encryption key

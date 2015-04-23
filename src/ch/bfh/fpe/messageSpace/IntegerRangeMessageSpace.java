@@ -3,7 +3,7 @@ package ch.bfh.fpe.messageSpace;
 import java.math.BigInteger;
 
 /**
- * Message space that is defined over a integer range. Negative values are allowed.
+ * Message space that is defined over an integer range. Negative values are allowed.
  * The type BigInteger is used which allows arbitrary-precision integers.
  * The range is defined with the lower- and upper limit in the constructor.<br/><br/>
  * 

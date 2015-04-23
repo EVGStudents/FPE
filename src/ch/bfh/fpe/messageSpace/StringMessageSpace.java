@@ -15,8 +15,8 @@ import dk.brics.automaton.State;
 import dk.brics.automaton.Transition;
 
 /**
- * Message space that is defined over a string. The domain of the string is defined
- * by an deterministic finite-state automata (DFA) or a regular expression.
+ * Message space defines a message spaces of strings. The domain of the string is defined
+ * by an deterministic finite-state automaton (DFA) or a regular expression.
  * This class implements the rank/unrank approach described in chapter 5 in
  * <a href="https://eprint.iacr.org/2009/251.pdf">https://eprint.iacr.org/2009/251.pdf</a>
  * (With the exception that the rank is not only defined over one slice but all.)<br/>

@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * Message space that is defined over an enumList.
  * The elements of the enumList can be of arbitrary type M and are passed
- * at construction time. Later they can not be changed to retain the order.
+ * at construction time. Later they cannot be changed to retain the order.
  * The user of this class has precise control over the position of each
  * element in the list before construction and is responsible to retain this order
  * for every subsequent use.

@@ -3,14 +3,14 @@ package ch.bfh.fpe.messageSpace;
 import java.math.BigInteger;
 
 /**
- * A class that implements this interface defines a message space.<br/>
+ * A class that extends this class defines a message space.<br/>
  * A message spaces enables to define a domain.
- * Methods are provided to get the rank of a element of this domain
+ * Methods are provided to get the rank of an element of this domain
  * and the inverse, the element at a particular rank.<br/><br/>
  * 
  * In the context of this format-preserving encryption library
  * it is used in two different ways:<ul>
- * <li>A FPE cipher aims to encipher on a message space of the form
+ * <li>A integer FPE cipher aims to encipher on a message space of the form
  * X'=[N]={0,1,...,N-1} for some arbitrary number N. The implementing class
  * IntegerMessageSpace is used to define N.</li> 
  * <li>The rank-then-encipher approach is used when the message to encrypt
@@ -22,8 +22,8 @@ import java.math.BigInteger;
  * to perform rank/unrank operations.</li></ul>
  * 
  * The rank starts counting at 0.<br/>
- * All implementing classes are immutable. Thus the domain is defined
- * over the constructor and can not be changed after.<br/><br/>
+ * All implemented classes are immutable. Thus the domain is defined
+ * over the constructor and cannot be changed after.<br/><br/>
  * 
  * @param <M> type of the elements of the domain. Thus the type of the
  * value that is ranked and the type of unrank's return value.
