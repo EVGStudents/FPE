@@ -46,7 +46,7 @@ public class KnuthShuffleCipher extends IntegerCipher {
 	private HashMap<byte[],HashMap<byte[],HashMap<BigInteger,BigInteger>>> ciphertextPermutationTable = new HashMap<>();
 	
 	//PBKDF parameters used if tweak has to be adjusted to 16 byte 
-	private static final int PBKDF_ITERATION_COUNT = 10000;
+	private static final int PBKDF_ITERATION_COUNT = 1;
 	private static final byte[] PBKDF_SALT = new byte[]{21,3,-94,-128,0,127,13,43,-19,120,20,94,-62,101,14,91};;
 
 	public KnuthShuffleCipher(IntegerMessageSpace messageSpace) {
