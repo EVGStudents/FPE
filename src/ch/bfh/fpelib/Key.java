@@ -55,7 +55,7 @@ public class Key {
 	 * Returns a key with the specified length.
 	 * If the length is equal to the one of the provided base key, that is returned unaltered.
 	 * If not, a new key is derived from the provided base key. 
-	 * @param length Length of the key
+	 * @param length Length of the key in bytes
 	 * @return key with the specified length
 	 */
 	public byte[] getKey(int length) {
