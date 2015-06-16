@@ -186,8 +186,8 @@ public class KnuthShuffleCipher extends IntegerCipher {
 		
 		try {
 			SecretKeyFactory kf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-			Charset latin1Charset = Charset.forName("ISO-8859-1"); 
-			char[] pw = latin1Charset.decode(ByteBuffer.wrap(tweak)).array();         
+			Charset charset = Charset.forName("UTF-8");
+			char[] pw = charset.decode(ByteBuffer.wrap(tweak)).array();         
 		    KeySpec specs = new PBEKeySpec(pw, PBKDF_SALT, PBKDF_ITERATION_COUNT, 128);
 		    SecretKey key = kf.generateSecret(specs);
 		    return key.getEncoded();
